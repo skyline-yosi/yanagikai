@@ -85,6 +85,7 @@
     <button onclick="showPage('players')">成績</button>
     <button onclick="showPage('graph')">グラフ</button>
     <button onclick="showPage('input')">入力</button>
+    <button onclick="exportData()" style="background:rgba(200,153,26,.25);border-color:rgba(200,153,26,.7);">📥 保存</button>
   </nav>
 </header>
 <main>
@@ -211,8 +212,17 @@ let allSessions=[], userSessions=[], seasonFilter='all', graphChart=null;
 const STORAGE_KEY='yanagi_user_v2';
 const ALL_PLAYERS=['太田(一)','高谷','神田','太田(良)','川瀬','久保','永川','佐々木','平野'];
 
-function loadData(){
+async function loadData(){
   allSessions=[...PRESET_SESSIONS];
+  // 外部data.jsonが存在すれば取得してマージ
+  try{
+    const res = await fetch('data.json?_=' + Date.now());
+    if(res.ok){
+      const external = await res.json();
+      if(Array.isArray(external)) allSessions = [...allSessions, ...external];
+    }
+  }catch(e){}
+  // localStorageの入力中データもマージ（入力担当者のみ）
   try{userSessions=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){userSessions=[];}
   allSessions=[...allSessions,...userSessions].sort((a,b)=>b.date.localeCompare(a.date));
 }
@@ -800,10 +810,23 @@ function showPage(id){
 }
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
+// エクスポート機能
+function exportData(){
+  const data = JSON.stringify(userSessions, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'data.json';
+  a.click();
+  showToast('📥 data.json をエクスポートしました。GitHubにアップロードしてください。');
+}
+
 // Init
-loadData();
-renderHome();
-initPlayerFilter();
+(async () => {
+  await loadData();
+  renderHome();
+  initPlayerFilter();
+})();
 </script>
 </body>
 </html>
