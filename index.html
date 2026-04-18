@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>チーム柳会</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --green:#1a6b3c;--green-d:#145530;--green-light:#e8f5ee;--green-mid:#2d9e5f;
+    --gold:#c8991a;--gold-light:#fff8e1;
+    --surface:#f7f6f2;--card:#ffffff;--border:#e2dfd8;
+    --text:#1c1c1a;--muted:#6b6860;--danger:#c0392b;--chip:#1a5fa8;
+    --s23:#7c3aed;--s24:#0369a1;--s25:#15803d;--s26:#b45309;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Hiragino Sans','Yu Gothic',sans-serif;background:var(--surface);color:var(--text);min-height:100vh;}
+  header{background:var(--green);color:white;padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.18);}
+  header h1{font-size:1.1rem;font-weight:700;letter-spacing:.05em;}
+  nav{display:flex;gap:4px;}
+  nav button{background:transparent;border:1.5px solid rgba(255,255,255,.35);color:white;border-radius:6px;padding:5px 12px;font-size:.8rem;cursor:pointer;transition:all .15s;font-family:inherit;}
+  nav button.active,nav button:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.7);}
+  main{max-width:1100px;margin:0 auto;padding:1.5rem 1rem 2rem;}
+  .page{display:none;}.page.active{display:block;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+  .card-title{font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;}
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1rem;}
+  .stat-card{background:var(--surface);border-radius:8px;padding:.9rem 1rem;border:1px solid var(--border);}
+  .stat-label{font-size:.72rem;color:var(--muted);margin-bottom:4px;}
+  .stat-value{font-size:1.5rem;font-weight:700;}
+  .stat-value.gold{color:var(--gold);}.stat-value.green{color:var(--green-mid);}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;}
+  .form-group{display:flex;flex-direction:column;gap:4px;}
+  label{font-size:.78rem;font-weight:600;color:var(--muted);}
+  input,select{border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:.9rem;font-family:inherit;background:var(--surface);color:var(--text);transition:border-color .15s;}
+  input:focus,select:focus{outline:none;border-color:var(--green-mid);background:white;}
+  .rank{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-weight:700;font-size:.75rem;}
+  .rank-1{background:#ffe066;color:#7a5c00;}.rank-2{background:#e0e0e0;color:#555;}
+  .rank-3{background:#f0c080;color:#7a4500;}.rank-4{background:#f0f0f0;color:#888;}
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:.82rem;}
+  th{background:var(--surface);color:var(--muted);font-size:.7rem;font-weight:700;letter-spacing:.05em;text-align:left;padding:7px 10px;border-bottom:1.5px solid var(--border);white-space:nowrap;}
+  td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}tr:hover td{background:var(--green-light);}
+  .btn{border:none;border-radius:7px;padding:9px 18px;font-size:.88rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+  .btn-primary{background:var(--green);color:white;}.btn-primary:hover{background:var(--green-d);}
+  .btn-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border);}.btn-secondary:hover{background:var(--border);}
+  .btn-gold{background:var(--gold);color:white;}.btn-gold:hover{background:#a87c14;}
+  .chip-badge{display:inline-flex;align-items:center;background:#e8f0fa;color:var(--chip);border-radius:5px;padding:2px 7px;font-size:.75rem;font-weight:600;}
+  .season-badge{display:inline-flex;align-items:center;border-radius:5px;padding:2px 7px;font-size:.72rem;font-weight:700;}
+  .s23{background:#ede9fe;color:var(--s23);}.s24{background:#e0f2fe;color:var(--s24);}.s25{background:#dcfce7;color:var(--s25);}.s26{background:#fef3c7;color:var(--s26);}
+  .player-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .player-row:last-child{border-bottom:none;}
+  .player-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;}
+  .player-name{font-weight:600;font-size:.95rem;}.player-stats{font-size:.75rem;color:var(--muted);}
+  .av0{background:#e8f5ee;color:#1a6b3c;}.av1{background:#e8f0fa;color:#1a5fa8;}.av2{background:#fff3cd;color:#7a5c00;}
+  .av3{background:#fce8e8;color:#b03020;}.av4{background:#ede9fe;color:#5b21b6;}.av5{background:#fef3c7;color:#92400e;}
+  .av6{background:#f0fdf4;color:#166534;}.av7{background:#fdf2f8;color:#9d174d;}
+
+  .filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;align-items:center;}
+  .filter-btn{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:4px 12px;font-size:.78rem;cursor:pointer;font-family:inherit;transition:all .15s;}
+  .filter-btn.active{background:var(--green);color:white;border-color:var(--green);}
+  .session-block{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px;}
+  .session-header{background:var(--surface);padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+  .session-header:hover{background:var(--green-light);}
+  .session-content{padding:0;display:none;}.session-content.open{display:block;}
+  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#222;color:white;border-radius:8px;padding:10px 20px;font-size:.85rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;}
+  .toast.show{opacity:1;}
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px;}
+  .section-header h2{font-size:1.05rem;font-weight:700;}
+  .pos{color:var(--green-mid);font-weight:600;}.neg{color:var(--danger);font-weight:600;}
+  .chart-container{position:relative;height:320px;margin-top:.5rem;}
+  .player-checkbox-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;}
+  .player-cb{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:.82rem;transition:all .15s;user-select:none;}
+  .player-cb.checked{color:white;border-color:transparent;}
+  @media(max-width:600px){nav button{padding:5px 7px;font-size:.72rem;}.stats-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🀄 チーム柳会</h1>
+  <nav>
+    <button class="active" onclick="showPage('home')">ホーム</button>
+    <button onclick="showPage('history')">履歴</button>
+    <button onclick="showPage('players')">成績</button>
+    <button onclick="showPage('graph')">グラフ</button>
+    <button onclick="showPage('input')">入力</button>
+  </nav>
+</header>
+<main>
+
+<!-- HOME -->
+<div id="page-home" class="page active">
+  <div class="card">
+    <div class="card-title" id="home-ranking-title">🏆 ランキング</div>
+    <div id="player-standings"></div>
+  </div>
+  <div class="card">
+    <div class="card-title" id="home-venue-title">🏠 店舗別利用実績</div>
+    <div id="venue-standings"></div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div id="page-history" class="page">
+  <div class="card">
+    <div class="section-header">
+      <h2>対局履歴</h2>
+      <input type="text" id="search-h" placeholder="名前 / 場所" style="width:140px;font-size:.82rem;" oninput="renderHistory()">
+    </div>
+    <div class="filter-bar" id="season-filter">
+      <span style="font-size:.76rem;color:var(--muted);">年度:</span>
+    </div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<!-- PLAYERS -->
+<div id="page-players" class="page">
+  <div class="card">
+    <div class="section-header">
+      <h2>プレイヤー別成績</h2>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:.76rem;color:var(--muted);">絞込:</span>
+        <select id="player-filter-type" onchange="renderPlayers()" style="font-size:.8rem;padding:4px 8px;">
+          <option value="season">年度別</option>
+          <option value="venue">会場別</option>
+        </select>
+        <select id="player-filter-val" onchange="renderPlayers()" style="font-size:.8rem;padding:4px 8px;"></select>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>プレイヤー</th><th>対局数</th><th>半荘</th><th>1位</th><th>2位</th><th>3位</th><th>4位</th><th>1位率</th><th>平均順位</th><th>合計点数</th><th>合計チップ</th></tr></thead>
+        <tbody id="players-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- GRAPH -->
+<div id="page-graph" class="page">
+  <div class="card">
+    <div class="section-header">
+      <h2>ポイント推移グラフ</h2>
+      <select id="graph-season" onchange="renderGraph()" style="font-size:.82rem;padding:5px 10px;">
+      </select>
+    </div>
+    <div id="player-checkboxes" class="player-checkbox-grid"></div>
+    <div class="chart-container"><canvas id="graph-canvas"></canvas></div>
+    <p style="font-size:.75rem;color:var(--muted);margin-top:.75rem;">半荘ごとの累積ポイント推移（チップは含まず）</p>
+  </div>
+</div>
+
+<!-- INPUT -->
+<div id="page-input" class="page">
+  <!-- STEP 1: 対局情報 -->
+  <div id="step1-card" class="card">
+    <div class="card-title">📋 STEP 1 — 対局情報</div>
+    <div class="form-grid" style="margin-bottom:1.2rem;">
+      <div class="form-group"><label>対局日</label><input type="date" id="inp-date"></div>
+      <div class="form-group"><label>場所</label><input type="text" id="inp-venue" placeholder="例：柳　赤坂店" list="venue-list">
+        <datalist id="venue-list"></datalist>
+      </div>
+    </div>
+    <div style="margin-bottom:.6rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span style="font-size:.78rem;font-weight:700;color:var(--muted);">参加プレイヤー（4〜6名）</span>
+      <button class="btn btn-secondary" onclick="addPlayerSlot()" style="padding:4px 10px;font-size:.78rem;">＋ 追加</button>
+      <button class="btn btn-secondary" onclick="removePlayerSlot()" style="padding:4px 10px;font-size:.78rem;">－ 削除</button>
+    </div>
+    <div id="player-slots"></div>
+    <div style="margin-top:1rem;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="goToStep2()">次へ：半荘を入力 →</button>
+      <button class="btn btn-secondary" onclick="initInput()">クリア</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: 半荘入力 -->
+  <div id="step2-card" class="card" style="display:none;">
+    <div class="card-title" id="step2-title">🀄 STEP 2 — 半荘結果入力</div>
+    <div id="step2-meta" style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;"></div>
+
+    <div id="rounds-list"></div>
+
+    <button class="btn btn-secondary" onclick="addRound()" style="margin-bottom:1rem;">＋ 半荘を追加</button>
+
+    <!-- チップ入力（対局日単位） -->
+    <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:.5rem;">
+      <div style="font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.6rem;">🪙 チップ（対局日合計）</div>
+      <div id="chip-inputs" style="display:grid;gap:6px;"></div>
+    </div>
+
+    <div style="margin-top:1.2rem;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="saveNewGame()">💾 保存</button>
+      <button class="btn btn-secondary" onclick="backToStep1()">← 戻る</button>
+      <button class="btn btn-secondary" onclick="initInput()">クリア</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PRESET_SESSIONS = 
+[{"date":"2025-05-09","venue":"麻雀MAP 田町","rounds":[{"round":"①","scores":{"太田(一)":-55.0,"高谷":23.0,"久保":null,"神田":57.0,"川瀬":null,"太田(良)":-25.0},"ranks":{"太田(一)":4,"高谷":2,"久保":null,"神田":1,"川瀬":null,"太田(良)":3}},{"round":"②","scores":{"太田(一)":49.0,"高谷":-50.0,"久保":null,"神田":15.0,"川瀬":null,"太田(良)":-14.0},"ranks":{"太田(一)":1,"高谷":4,"久保":null,"神田":2,"川瀬":null,"太田(良)":3}},{"round":"③","scores":{"太田(一)":-43.0,"高谷":51.0,"久保":null,"神田":-24.0,"川瀬":null,"太田(良)":16.0},"ranks":{"太田(一)":4,"高谷":1,"久保":null,"神田":3,"川瀬":null,"太田(良)":2}},{"round":"④","scores":{"太田(一)":-48.0,"高谷":75.0,"久保":null,"神田":-31.0,"川瀬":null,"太田(良)":4.0},"ranks":{"太田(一)":4,"高谷":1,"久保":null,"神田":3,"川瀬":null,"太田(良)":2}},{"round":"⑤","scores":{"太田(一)":13.0,"高谷":48.0,"久保":null,"神田":-16.0,"川瀬":null,"太田(良)":-45.0},"ranks":{"太田(一)":2,"高谷":1,"久保":null,"神田":3,"川瀬":null,"太田(良)":4}},{"round":"⑥","scores":{"太田(一)":-25.0,"高谷":54.0,"久保":null,"神田":15.0,"川瀬":null,"太田(良)":-44.0},"ranks":{"太田(一)":3,"高谷":1,"久保":null,"神田":2,"川瀬":null,"太田(良)":4}}],"chips":{"太田(一)":-26.0,"高谷":50.0,"久保":0,"神田":4.0,"川瀬":0,"太田(良)":-28.0},"players":["太田(一)","高谷","久保","神田","川瀬","太田(良)"],"season":"2025"},{"date":"2025-07-04","venue":"麻雀MAP 田町","rounds":[{"round":"①","scores":{"太田(一)":7.0,"高谷":-33.0,"久保":45.0,"神田":-19.0,"川瀬":null,"太田(良)":null},"ranks":{"太田(一)":2,"高谷":4,"久保":1,"神田":3,"川瀬":null,"太田(良)":null}},{"round":"②","scores":{"太田(一)":24.0,"高谷":-17.0,"久保":-61.0,"神田":54.0,"川瀬":null,"太田(良)":null},"ranks":{"太田(一)":2,"高谷":3,"久保":4,"神田":1,"川瀬":null,"太田(良)":null}},{"round":"③","scores":{"太田(一)":-38.0,"高谷":63.0,"久保":-2.0,"神田":-23.0,"川瀬":null,"太田(良)":null},"ranks":{"太田(一)":4,"高谷":1,"久保":2,"神田":3,"川瀬":null,"太田(良)":null}},{"round":"④","scores":{"太田(一)":12.0,"高谷":-39.0,"久保":45.0,"神田":-18.0,"川瀬":null,"太田(良)":null},"ranks":{"太田(一)":2,"高谷":4,"久保":1,"神田":3,"川瀬":null,"太田(良)":null}},{"round":"⑤","scores":{"太田(一)":14.0,"高谷":55.0,"久保":-52.0,"神田":-17.0,"川瀬":null,"太田(良)":null},"ranks":{"太田(一)":2,"高谷":1,"久保":4,"神田":3,"川瀬":null,"太田(良)":null}}],"chips":{"太田(一)":10.0,"高谷":14.0,"久保":8.0,"神田":-32.0,"川瀬":0,"太田(良)":0},"players":["太田(一)","高谷","久保","神田","川瀬","太田(良)"],"season":"2025"},{"date":"2025-07-25","venue":"麻雀MAP 田町","rounds":[{"round":"①","scores":{"太田(一)":69.0,"高谷":-17.0,"久保":null,"神田":-55.0,"川瀬":null,"太田(良)":3.0},"ranks":{"太田(一)":1,"高谷":3,"久保":null,"神田":4,"川瀬":null,"太田(良)":2}},{"round":"②","scores":{"太田(一)":63.0,"高谷":-15.0,"久保":null,"神田":14.0,"川瀬":null,"太田(良)":-62.0},"ranks":{"太田(一)":1,"高谷":3,"久保":null,"神田":2,"川瀬":null,"太田(良)":4}},{"round":"③","scores":{"太田(一)":-45.0,"高谷":11.0,"久保":null,"神田":60.0,"川瀬":null,"太田(良)":-26.0},"ranks":{"太田(一)":4,"高谷":2,"久保":null,"神田":1,"川瀬":null,"太田(良)":3}},{"round":"④","scores":{"太田(一)":1.0,"高谷":-51.0,"久保":null,"神田":-23.0,"川瀬":null,"太田(良)":73.0},"ranks":{"太田(一)":2,"高谷":4,"久保":null,"神田":3,"川瀬":null,"太田(良)":1}},{"round":"⑤","scores":{"太田(一)":-16.0,"高谷":45.0,"久保":null,"神田":-34.0,"川瀬":null,"太田(良)":5.0},"ranks":{"太田(一)":3,"高谷":1,"久保":null,"神田":4,"川瀬":null,"太田(良)":2}},{"round":"⑥","scores":{"太田(一)":64.0,"高谷":-22.0,"久保":null,"神田":12.0,"川瀬":null,"太田(良)":-54.0},"ranks":{"太田(一)":1,"高谷":3,"久保":null,"神田":2,"川瀬":null,"太田(良)":4}},{"round":"⑦","scores":{"太田(一)":-34.0,"高谷":63.0,"久保":null,"神田":22.0,"川瀬":null,"太田(良)":-51.0},"ranks":{"太田(一)":3,"高谷":1,"久保":null,"神田":2,"川瀬":null,"太田(良)":4}}],"chips":{"太田(一)":34.0,"高谷":-26.0,"久保":0,"神田":54.0,"川瀬":0,"太田(良)":-62.0},"players":["太田(一)","高谷","久保","神田","川瀬","太田(良)"],"season":"2025"},{"date":"2025-08-01","venue":"麻雀ホワイト品川","rounds":[{"round":"①","scores":{"太田(一)":13.0,"高谷":54.0,"久保":null,"神田":-15.0,"川瀬":null,"太田(良)":-52.0},"ranks":{"太田(一)":2,"高谷":1,"久保":null,"神田":3,"川瀬":null,"太田(良)":4}},{"round":"②","scores":{"太田(一)":15.0,"高谷":75.0,"久保":null,"神田":-58.0,"川瀬":null,"太田(良)":-32.0},"ranks":{"太田(一)":2,"高谷":1,"久保":null,"神田":4,"川瀬":null,"太田(良)":3}},{"round":"③","scores":{"太田(一)":7.0,"高谷":-16.0,"久保":null,"神田":-51.0,"川瀬":null,"太田(良)":60.0},"ranks":{"太田(一)":2,"高谷":3,"久保":null,"神田":4,"川瀬":null,"太田(良)":1}},{"round":"④","scores":{"太田(一)":-27.0,"高谷":58.0,"久保":null,"神田":21.0,"川瀬":null,"太田(良)":-52.0},"ranks":{"太田(一)":3,"高谷":1,"久保":null,"神田":2,"川瀬":null,"太田(良)":4}},{"round":"⑤","scores":{"太田(一)":8.0,"高谷":77.0,"久保":null,"神田":-34.0,"川瀬":null,"太田(良)":-51.0},"ranks":{"太田(一)":2,"高谷":1,"久保":null,"神田":3,"川瀬":null,"太田(良)":4}},{"round":"⑥","scores":{"太田(一)":-49.0,"高谷":58.0,"久保":null,"神田":-30.0,"川瀬":null,"太田(良)":21.0},"ranks":{"太田(一)":4,"高谷":1,"久保":null,"神田":3,"川瀬":null,"太田(良)":2}}],"chips":{"太田(一)":-26.0,"高谷":82.0,"久保":0,"神田":-28.0,"川瀬":0,"太田(良)":-28.0},"players":["太田(一)","高谷","久保","神田","川瀬","太田(良)"],"season":"2025"},{"date":"2025-09-12","venue":"麻雀ホワイト品川","rounds":[{"round":"①","scores":{"太田(一)":65.0,"高谷":-56.0,"久保":null,"神田":10.0,"川瀬":null,"太田(良)":-19.0},"ranks":{"太田(一)":1,"高谷":4,"久保":null,"神田":2,"川瀬":null,"太田(良)":3}},{"round":"②","scores":{"太田(一)":-26.0,"高谷":-1.0,"久保":null,"神田":-41.0,"川瀬":null,"太田(良)":68.0},"ranks":{"太田(一)":3,"高谷":2,"久保":null,"神田":4,"川瀬":null,"太田(良)":1}},{"round":"③","scores":{"太田(一)":24.0,"高谷":60.0,"久保":null,"神田":-54.0,"川瀬":null,"太田(良)":-30.0},"ranks":{"太田(一)":2,"高谷":1,"久保":null,"神田":4,"川瀬":null,"太田(良)":3}},{"round":"④","scores":{"太田(一)":5.0,"高谷":64.0,"久保":null,"神田":-42.0,"川瀬":null,"太田(良)":-27.0},"ranks":{"太田(一)":2,"高谷":1,"久保":null,"神田":4,"川瀬":null,"太田(良)":3}},{"round":"⑤","scores":{"太田(一)":-51.0,"高谷":98.0,"久保":null,"神田":-11.0,"川瀬":null,"太田(良)":-36.0},"ranks":{"太田(一)":4,"高谷":1,"久保":null,"神田":2,"川瀬":null,"太田(良)":3}},{"round":"⑥","scores":{"太田(一)":-41.0,"高谷":-28.0,"久保":null,"神田":18.0,"川瀬":null,"太田(良)":51.0},"ranks":{"太田(一)":4,"高谷":3,"久保":null,"神田":2,"川瀬":null,"太田(良)":1}},{"round":"⑦","scores":{"太田(一)":68.0,"高谷":21.0,"久保":null,"神田":-57.0,"川瀬":null,"太田(良)":-32.0},"ranks":{"太田(一)":1,"高谷":2,"久保":null,"神田":4,"川瀬":null,"太田(良)":3}},{"round":"⑧","scores":{"太田(一)":47.0,"高谷":-47.0,"久保":null,"神田":-16.0,"川瀬":null,"太田(良)":16.0},"ranks":{"太田(一)":1,"高谷":4,"久保":null,"神田":3,"川瀬":null,"太田(良)":2}}],"chips":{"太田(一)":8.0,"高谷":6.0,"久保":0,"神田":-26.0,"川瀬":0,"太田(良)":12.0},"players":["太田(一)","高谷","久保","神田","川瀬","太田(良)"],"season":"2025"},{"date":"2025-10-03","venue":"麻雀ホワイト品川","rounds":[{"round":"①","scores":{"太田(一)":-55.0,"高谷":7.0,"久保":null,"神田":68.0,"川瀬":null,"太田(良)":-20.0},"ranks":{"太田(一)":4,"高谷":2,"久保":null,"神田":1,"川瀬":null,"太田(良)":3}},{"round":"②","scores":{"太田(一)":-56.0,"高谷":63.0,"久保":null,"神田":-21.0,"川瀬":null,"太田(良)":14.0},"ranks":{"太田(一)":4,"高谷":1,"久保":null,"神田":3,"川瀬":null,"太田(良)":2}},{"round":"③","scores":{"太田(一)":0.0,"高谷":84.0,"久保":null,"神田":-32.0,"川瀬":null,"太田(良)":-52.0},"ranks":{"太田(一)":2,"高谷":1,"久保":null,"神田":3,"川瀬":2,"太田(良)":4}},{"round":"④","scores":{"太田(一)":-33.0,"高谷":15.0,"久保":null,"神田":69.0,"川瀬":null,"太田(良)":-51.0},"ranks":{"太田(一)":3,"高谷":2,"久保":null,"神田":1,"川瀬":null,"太田(良)":4}},{"round":"⑤","scores":{"太田(一)":70.0,"高谷":6.0,"久保":null,"神田":-52.0,"川瀬":null,"太田(良)":-24.0},"ranks":{"太田(一)":1,"高谷":2,"久保":null,"神田":4,"川瀬":null,"太田(良)":3}},{"round":"⑥","scores":{"太田(一)":56.0,"高谷":11.0,"久保":null,"神田":-20.0,"川瀬":null,"太田(良)":-47.0},"ranks":{"太田(一)":1,"高谷":2,"久保":null,"神田":3,"川瀬":null,"太田(良)":4}},{"round":"⑦","scores":{"太田(一)":-42.0,"高谷":-24.0,"久保":null,"神田":-1.0,"川瀬":null,"太田(良)":67.0},"ranks":{"太田(一)":4,"高谷":3,"久保":null,"神田":2,"川瀬":null,"太田(良)":1}},{"round":"⑧","scores":{"太田(一)":13.0,"高谷":-51.0,"久保":null,"神田":57.0,"川瀬":null,"太田(良)":-19.0},"ranks":{"太田(一)":2,"高谷":4,"久保":null,"神田":1,"川瀬":null,"太田(良)":3}}],"chips":{"太田(一)":-24.0,"高谷":34.0,"久保":0,"神田":6.0,"川瀬":0,"太田(良)":-16.0},"players":["太田(一)","高谷","久保","神田","川瀬","太田(良)"],"season":"2025"},{"date":"2025-10-24","venue":"麻雀ホワイト品川","rounds":[{"round":"①","scores":{"太田(一)":-26.0,"高谷":-41.0,"久保":null,"神田":null,"川瀬":6.0,"太田(良)":61.0},"ranks":{"太田(一)":3,"高谷":4,"久保":null,"神田":null,"川瀬":2,"太田(良)":1}},{"round":"②","scores":{"太田(一)":-55.0,"高谷":-21.0,"久保":null,"神田":null,"川瀬":71.0,"太田(良)":5.0},"ranks":{"太田(一)":4,"高谷":3,"久保":null,"神田":null,"川瀬":1,"太田(良)":2}},{"round":"③","scores":{"太田(一)":62.0,"高谷":-32.0,"久保":null,"神田":null,"川瀬":21.0,"太田(良)":-51.0},"ranks":{"太田(一)":1,"高谷":3,"久保":null,"神田":null,"川瀬":2,"太田(良)":4}},{"round":"④","scores":{"太田(一)":-32.0,"高谷":83.0,"久保":null,"神田":null,"川瀬":-52.0,"太田(良)":1.0},"ranks":{"太田(一)":3,"高谷":1,"久保":null,"神田":null,"川瀬":4,"太田(良)":2}},{"round":"⑤","scores":{"太田(一)":-19.0,"高谷":5.0,"久保":null,"神田":null,"川瀬":70.0,"太田(良)":-56.0},"ranks":{"太田(一)":3,"高谷":2,"久保":null,"神田":null,"川瀬":1,"太田(良)":4}},{"round":"⑥","scores":{"太田(一)":-30.0,"高谷":44.0,"久保":null,"神田":null,"川瀬":-18.0,"太田(良)":4.0},"ranks":{"太田(一)":3,"高谷":1,"久保":null,"神田":null,"川瀬":3,"太田(良)":2}}],"chips":{"太田(一)":-18.0,"高谷":0.0,"久保":0,"神田":0,"川瀬":2.0,"太田(良)":16.0},"players":["太田(一)","高谷","久保","神田","川瀬","太田(良)"],"season":"2025"},{"date":"2025-11-20","venue":"麻雀ホワイト品川","rounds":[{"round":"①","scores":{"太田(一)":-26.0,"高谷":77.0,"久保":null,"神田":null,"川瀬":0.0,"太田(良)":-51.0},"ranks":{"太田(一)":3,"高谷":1,"久保":2,"神田":2,"川瀬":2,"太田(良)":4}},{"round":"②","scores":{"太田(一)":11.0,"高谷":-15.0,"久保":null,"神田":null,"川瀬":55.0,"太田(良)":-51.0},"ranks":{"太田(一)":2,"高谷":3,"久保":null,"神田":null,"川瀬":1,"太田(良)":4}},{"round":"③","scores":{"太田(一)":53.0,"高谷":-42.0,"久保":null,"神田":null,"川瀬":-25.0,"太田(良)":14.0},"ranks":{"太田(一)":1,"高谷":4,"久保":null,"神田":null,"川瀬":3,"太田(良)":2}},{"round":"④","scores":{"太田(一)":-21.0,"高谷":56.0,"久保":null,"神田":null,"川瀬":-42.0,"太田(良)":7.0},"ranks":{"太田(一)":3,"高谷":1,"久保":null,"神田":null,"川瀬":4,"太田(良)":2}},{"round":"⑤","scores":{"太田(一)":-36.0,"高谷":7.0,"久保":null,"神田":null,"川瀬":49.0,"太田(良)":-20.0},"ranks":{"太田(一)":4,"高谷":2,"久保":null,"神田":null,"川瀬":1,"太田(良)":3}},{"round":"⑥","scores":{"太田(一)":6.0,"高谷":69.0,"久保":null,"神田":null,"川瀬":-47.0,"太田(良)":-28.0},"ranks":{"太田(一)":2,"高谷":1,"久保":null,"神田":null,"川瀬":4,"太田(良)":3}}],"chips":{"太田(一)":-8.0,"高谷":30.0,"久保":0,"神田":0,"川瀬":-10.0,"太田(良)":-12.0},"players":["太田(一)","高谷","久保","神田","川瀬","太田(良)"],"season":"2025"},{"date":"2025-12-25","venue":"麻雀ホワイト品川","rounds":[{"round":"①","scores":{"太田(一)":-41.0,"高谷":52.0,"久保":null,"神田":10.0,"川瀬":null,"太田(良)":-21.0},"ranks":{"太田(一)":4,"高谷":1,"久保":null,"神田":2,"川瀬":null,"太田(良)":3}},{"round":"②","scores":{"太田(一)":46.0,"高谷":12.0,"久保":null,"神田":-44.0,"川瀬":null,"太田(良)":-14.0},"ranks":{"太田(一)":1,"高谷":2,"久保":null,"神田":4,"川瀬":null,"太田(良)":3}},{"round":"③","scores":{"太田(一)":-45.0,"高谷":78.0,"久保":null,"神田":-2.0,"川瀬":null,"太田(良)":-31.0},"ranks":{"太田(一)":4,"高谷":1,"久保":null,"神田":2,"川瀬":null,"太田(良)":3}},{"round":"④","scores":{"太田(一)":-51.0,"高谷":-18.0,"久保":null,"神田":60.0,"川瀬":null,"太田(良)":9.0},"ranks":{"太田(一)":4,"高谷":3,"久保":null,"神田":1,"川瀬":null,"太田(良)":2}},{"round":"⑤","scores":{"太田(一)":-27.0,"高谷":-38.0,"久保":null,"神田":15.0,"川瀬":null,"太田(良)":50.0},"ranks":{"太田(一)":3,"高谷":4,"久保":null,"神田":2,"川瀬":null,"太田(良)":1}},{"round":"⑥","scores":{"太田(一)":-21.0,"高谷":69.0,"久保":null,"神田":-53.0,"川瀬":null,"太田(良)":5.0},"ranks":{"太田(一)":3,"高谷":1,"久保":null,"神田":4,"川瀬":null,"太田(良)":2}},{"round":"⑦","scores":{"太田(一)":-27.0,"高谷":53.0,"久保":null,"神田":13.0,"川瀬":null,"太田(良)":-39.0},"ranks":{"太田(一)":3,"高谷":1,"久保":null,"神田":2,"川瀬":null,"太田(良)":4}}],"chips":{"太田(一)":-12.0,"高谷":18.0,"久保":0,"神田":0.0,"川瀬":0,"太田(良)":-6.0},"players":["太田(一)","高谷","久保","神田","川瀬","太田(良)"],"season":"2025"},{"date":"2025-12-26","venue":"柳 赤坂店","rounds":[{"round":"①","scores":{"太田(一)":8.0,"高谷":41.0,"久保":-36.0,"神田":null,"川瀬":null,"太田(良)":null,"平野":-13.0},"ranks":{"太田(一)":2,"高谷":1,"久保":4,"神田":null,"川瀬":null,"太田(良)":null,"平野":3}},{"round":"②","scores":{"太田(一)":null,"高谷":-51.0,"久保":-34.0,"神田":null,"川瀬":null,"太田(良)":20.0,"平野":65.0},"ranks":{"太田(一)":null,"高谷":4,"久保":3,"神田":null,"川瀬":null,"太田(良)":2,"平野":1}},{"round":"③","scores":{"太田(一)":-35.0,"高谷":null,"久保":-54.0,"神田":null,"川瀬":88.0,"太田(良)":null,"平野":1.0},"ranks":{"太田(一)":3,"高谷":null,"久保":4,"神田":null,"川瀬":1,"太田(良)":null,"平野":2}},{"round":"④","scores":{"太田(一)":null,"高谷":48.0,"久保":17.0,"神田":null,"川瀬":-53.0,"太田(良)":-12.0,"平野":null},"ranks":{"太田(一)":null,"高谷":1,"久保":2,"神田":null,"川瀬":4,"太田(良)":3,"平野":null}},{"round":"⑤","scores":{"太田(一)":-24.0,"高谷":54.0,"久保":null,"神田":null,"川瀬":6.0,"太田(良)":null,"平野":-36.0},"ranks":{"太田(一)":3,"高谷":1,"久保":null,"神田":null,"川瀬":2,"太田(良)":null,"平野":4}},{"round":"⑥","scores":{"太田(一)":-28.0,"高谷":-53.0,"久保":null,"神田":null,"川瀬":null,"太田(良)":63.0,"平野":18.0},"ranks":{"太田(一)":3,"高谷":4,"久保":null,"神田":null,"川瀬":null,"太田(良)":1,"平野":2}},{"round":"⑦","scores":{"太田(一)":-43.0,"高谷":20.0,"久保":null,"神田":null,"川瀬":-30.0,"太田(良)":53.0,"平野":null},"ranks":{"太田(一)":4,"高谷":2,"久保":null,"神田":null,"川瀬":3,"太田(良)":1,"平野":null}}],"chips":{"太田(一)":-24.0,"高谷":40.0,"久保":-30.0,"神田":0,"川瀬":-12.0,"太田(良)":26.0},"players":["太田(一)","高谷","久保","神田","川瀬","太田(良)","平野"],"season":"2025"},{"date":"2026-01-23","venue":"麻雀ホワイト品川","rounds":[{"round":"①","scores":{"太田(一)":null,"高谷":-45.0,"久保":null,"神田":-22.0,"川瀬":56.0,"太田(良)":11.0},"ranks":{"太田(一)":null,"高谷":4,"久保":null,"神田":3,"川瀬":1,"太田(良)":2}},{"round":"②","scores":{"太田(一)":null,"高谷":15.0,"久保":null,"神田":-43.0,"川瀬":48.0,"太田(良)":-20.0},"ranks":{"太田(一)":null,"高谷":2,"久保":null,"神田":4,"川瀬":1,"太田(良)":3}},{"round":"③","scores":{"太田(一)":null,"高谷":-52.0,"久保":null,"神田":-20.0,"川瀬":54.0,"太田(良)":18.0},"ranks":{"太田(一)":null,"高谷":4,"久保":null,"神田":3,"川瀬":1,"太田(良)":2}},{"round":"④","scores":{"太田(一)":null,"高谷":-14.0,"久保":null,"神田":-54.0,"川瀬":13.0,"太田(良)":55.0},"ranks":{"太田(一)":null,"高谷":3,"久保":null,"神田":4,"川瀬":2,"太田(良)":1}},{"round":"⑤","scores":{"太田(一)":null,"高谷":-56.0,"久保":null,"神田":-21.0,"川瀬":14.0,"太田(良)":63.0},"ranks":{"太田(一)":null,"高谷":4,"久保":null,"神田":3,"川瀬":2,"太田(良)":1}},{"round":"⑥","scores":{"太田(一)":null,"高谷":-28.0,"久保":null,"神田":-42.0,"川瀬":10.0,"太田(良)":60.0},"ranks":{"太田(一)":null,"高谷":3,"久保":null,"神田":4,"川瀬":2,"太田(良)":1}},{"round":"⑦","scores":{"太田(一)":null,"高谷":-44.0,"久保":null,"神田":-29.0,"川瀬":15.0,"太田(良)":58.0},"ranks":{"太田(一)":null,"高谷":4,"久保":null,"神田":3,"川瀬":2,"太田(良)":1}},{"round":"⑧","scores":{"太田(一)":null,"高谷":-36.0,"久保":null,"神田":52.0,"川瀬":-21.0,"太田(良)":5.0},"ranks":{"太田(一)":null,"高谷":4,"久保":null,"神田":1,"川瀬":3,"太田(良)":2}}],"chips":{"太田(一)":0,"高谷":-38.0,"久保":0,"神田":-34.0,"川瀬":36.0,"太田(良)":36.0},"players":["太田(一)","高谷","久保","神田","川瀬","太田(良)"],"season":"2025"},{"date":"2026-01-30","venue":"麻雀ホワイト品川","rounds":[{"round":"①","scores":{"太田(一)":44.0,"高谷":-17.0,"久保":null,"神田":-32.0,"川瀬":5.0,"太田(良)":null},"ranks":{"太田(一)":1,"高谷":3,"久保":null,"神田":4,"川瀬":2,"太田(良)":null}},{"round":"②","scores":{"太田(一)":-48.0,"高谷":9.0,"久保":null,"神田":-17.0,"川瀬":56.0,"太田(良)":null},"ranks":{"太田(一)":4,"高谷":2,"久保":null,"神田":3,"川瀬":1,"太田(良)":null}},{"round":"③","scores":{"太田(一)":-34.0,"高谷":8.0,"久保":null,"神田":41.0,"川瀬":-15.0,"太田(良)":null},"ranks":{"太田(一)":4,"高谷":2,"久保":null,"神田":1,"川瀬":3,"太田(良)":null}},{"round":"④","scores":{"太田(一)":-7.0,"高谷":14.0,"久保":null,"神田":-56.0,"川瀬":49.0,"太田(良)":null},"ranks":{"太田(一)":3,"高谷":2,"久保":null,"神田":4,"川瀬":1,"太田(良)":null}},{"round":"⑤","scores":{"太田(一)":24.0,"高谷":56.0,"久保":null,"神田":-48.0,"川瀬":-32.0,"太田(良)":null},"ranks":{"太田(一)":2,"高谷":1,"久保":null,"神田":4,"川瀬":3,"太田(良)":null}},{"round":"⑥","scores":{"太田(一)":-18.0,"高谷":55.0,"久保":null,"神田":-43.0,"川瀬":6.0,"太田(良)":null},"ranks":{"太田(一)":3,"高谷":1,"久保":null,"神田":4,"川瀬":2,"太田(良)":null}}],"chips":{"太田(一)":32.0,"高谷":10.0,"久保":0,"神田":-24.0,"川瀬":-18.0,"太田(良)":0},"players":["太田(一)","高谷","久保","神田","川瀬","太田(良)"],"season":"2025"},{"date":"2026-02-13","venue":"麻雀ホワイト品川","rounds":[{"round":"①","scores":{"太田(一)":-3.0,"高谷":-25.0,"久保":null,"神田":69.0,"川瀬":null,"太田(良)":-41.0},"ranks":{"太田(一)":2,"高谷":3,"久保":null,"神田":1,"川瀬":null,"太田(良)":4}},{"round":"②","scores":{"太田(一)":54.0,"高谷":-21.0,"久保":null,"神田":-40.0,"川瀬":null,"太田(良)":7.0},"ranks":{"太田(一)":1,"高谷":3,"久保":null,"神田":4,"川瀬":null,"太田(良)":2}},{"round":"③","scores":{"太田(一)":53.0,"高谷":-49.0,"久保":null,"神田":-23.0,"川瀬":null,"太田(良)":19.0},"ranks":{"太田(一)":1,"高谷":4,"久保":null,"神田":3,"川瀬":null,"太田(良)":2}},{"round":"④","scores":{"太田(一)":46.0,"高谷":7.0,"久保":null,"神田":-16.0,"川瀬":null,"太田(良)":-37.0},"ranks":{"太田(一)":1,"高谷":2,"久保":null,"神田":3,"川瀬":null,"太田(良)":4}},{"round":"⑤","scores":{"太田(一)":13.0,"高谷":57.0,"久保":null,"神田":-50.0,"川瀬":null,"太田(良)":-20.0},"ranks":{"太田(一)":2,"高谷":1,"久保":null,"神田":4,"川瀬":null,"太田(良)":3}},{"round":"⑥","scores":{"太田(一)":-43.0,"高谷":9.0,"久保":null,"神田":-14.0,"川瀬":null,"太田(良)":48.0},"ranks":{"太田(一)":4,"高谷":2,"久保":null,"神田":3,"川瀬":null,"太田(良)":1}}],"chips":{"太田(一)":10.0,"高谷":-4.0,"久保":0,"神田":-10.0,"川瀬":0,"太田(良)":4.0},"players":["太田(一)","高谷","久保","神田","川瀬","太田(良)"],"season":"2025"},{"date":"2026-03-06","venue":"麻雀ホワイト品川","rounds":[{"round":"①","scores":{"太田(一)":44.0,"高谷":-16.0,"久保":null,"神田":null,"川瀬":7.0,"太田(良)":-35.0},"ranks":{"太田(一)":1,"高谷":3,"久保":null,"神田":null,"川瀬":2,"太田(良)":4}},{"round":"②","scores":{"太田(一)":-41.0,"高谷":-18.0,"久保":null,"神田":null,"川瀬":52.0,"太田(良)":7.0},"ranks":{"太田(一)":4,"高谷":3,"久保":null,"神田":null,"川瀬":1,"太田(良)":2}},{"round":"③","scores":{"太田(一)":6.0,"高谷":42.0,"久保":null,"神田":null,"川瀬":-16.0,"太田(良)":-32.0},"ranks":{"太田(一)":2,"高谷":1,"久保":null,"神田":null,"川瀬":3,"太田(良)":4}},{"round":"④","scores":{"太田(一)":-15.0,"高谷":50.0,"久保":null,"神田":null,"川瀬":6.0,"太田(良)":-41.0},"ranks":{"太田(一)":3,"高谷":1,"久保":null,"神田":null,"川瀬":2,"太田(良)":4}},{"round":"⑤","scores":{"太田(一)":-51.0,"高谷":6.0,"久保":null,"神田":null,"川瀬":-15.0,"太田(良)":60.0},"ranks":{"太田(一)":4,"高谷":2,"久保":null,"神田":null,"川瀬":3,"太田(良)":1}},{"round":"⑥","scores":{"太田(一)":7.0,"高谷":-34.0,"久保":null,"神田":null,"川瀬":45.0,"太田(良)":-18.0},"ranks":{"太田(一)":2,"高谷":4,"久保":null,"神田":null,"川瀬":1,"太田(良)":3}},{"round":"⑦","scores":{"太田(一)":6.0,"高谷":-16.0,"久保":null,"神田":null,"川瀬":58.0,"太田(良)":-48.0},"ranks":{"太田(一)":2,"高谷":3,"久保":null,"神田":null,"川瀬":1,"太田(良)":4}},{"round":"⑧","scores":{"太田(一)":-27.0,"高谷":5.0,"久保":null,"神田":null,"川瀬":38.0,"太田(良)":-16.0},"ranks":{"太田(一)":4,"高谷":2,"久保":null,"神田":null,"川瀬":1,"太田(良)":3}}],"chips":{"太田(一)":4.0,"高谷":-8.0,"久保":0,"神田":0,"川瀬":6.0,"太田(良)":-2.0},"players":["太田(一)","高谷","久保","神田","川瀬","太田(良)"],"season":"2025"},{"date":"2024-04-12","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":-40.0,"永川":11.0,"高谷":-14.0,"久保":null,"佐々木":null,"神田":null,"太田(良)":43.0},"ranks":{"太田(一)":4,"永川":2,"高谷":3,"久保":null,"佐々木":null,"神田":null,"太田(良)":1}},{"round":"②","scores":{"太田(一)":-20.0,"永川":10.0,"高谷":-35.0,"久保":null,"佐々木":null,"神田":null,"太田(良)":45.0},"ranks":{"太田(一)":3,"永川":2,"高谷":4,"久保":null,"佐々木":null,"神田":null,"太田(良)":1}},{"round":"③","scores":{"太田(一)":-21.0,"永川":9.0,"高谷":44.0,"久保":null,"佐々木":null,"神田":null,"太田(良)":-32.0},"ranks":{"太田(一)":3,"永川":2,"高谷":1,"久保":null,"佐々木":null,"神田":null,"太田(良)":4}},{"round":"④","scores":{"太田(一)":-20.0,"永川":11.0,"高谷":-50.0,"久保":null,"佐々木":null,"神田":null,"太田(良)":59.0},"ranks":{"太田(一)":3,"永川":2,"高谷":4,"久保":null,"佐々木":null,"神田":null,"太田(良)":1}},{"round":"⑤","scores":{"太田(一)":8.0,"永川":45.0,"高谷":-40.0,"久保":null,"佐々木":null,"神田":null,"太田(良)":-13.0},"ranks":{"太田(一)":2,"永川":1,"高谷":4,"久保":null,"佐々木":null,"神田":null,"太田(良)":3}}],"chips":{"太田(一)":-30.0,"永川":0.0,"高谷":-36.0,"久保":0,"佐々木":0,"神田":0,"太田(良)":66.0},"players":["太田(一)","永川","高谷","久保","佐々木","神田","太田(良)"],"season":"2024"},{"date":"2024-06-07","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":0.0,"永川":null,"高谷":-35.0,"久保":null,"佐々木":57.0,"神田":null,"太田(良)":-22.0},"ranks":{"太田(一)":2,"永川":null,"高谷":4,"久保":null,"佐々木":1,"神田":null,"太田(良)":3}},{"round":"②","scores":{"太田(一)":13.0,"永川":null,"高谷":43.0,"久保":null,"佐々木":-21.0,"神田":null,"太田(良)":-35.0},"ranks":{"太田(一)":2,"永川":null,"高谷":1,"久保":null,"佐々木":3,"神田":null,"太田(良)":4}},{"round":"③","scores":{"太田(一)":14.0,"永川":null,"高谷":-45.0,"久保":null,"佐々木":-15.0,"神田":null,"太田(良)":46.0},"ranks":{"太田(一)":2,"永川":null,"高谷":4,"久保":null,"佐々木":3,"神田":null,"太田(良)":1}},{"round":"④","scores":{"太田(一)":59.0,"永川":null,"高谷":8.0,"久保":null,"佐々木":-15.0,"神田":null,"太田(良)":-52.0},"ranks":{"太田(一)":1,"永川":null,"高谷":2,"久保":null,"佐々木":3,"神田":null,"太田(良)":4}},{"round":"⑤","scores":{"太田(一)":-31.0,"永川":null,"高谷":19.0,"久保":null,"佐々木":55.0,"神田":null,"太田(良)":-43.0},"ranks":{"太田(一)":3,"永川":null,"高谷":2,"久保":null,"佐々木":1,"神田":null,"太田(良)":4}}],"chips":{"太田(一)":6.0,"永川":0,"高谷":-16.0,"久保":0,"佐々木":52.0,"神田":0,"太田(良)":-42.0},"players":["太田(一)","永川","高谷","久保","佐々木","神田","太田(良)"],"season":"2024"},{"date":"2024-07-26","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":-24.0,"永川":null,"高谷":-34.0,"久保":54.0,"佐々木":null,"神田":null,"太田(良)":4.0},"ranks":{"太田(一)":3,"永川":null,"高谷":4,"久保":1,"佐々木":null,"神田":null,"太田(良)":2}},{"round":"②","scores":{"太田(一)":71.0,"永川":null,"高谷":-54.0,"久保":6.0,"佐々木":null,"神田":null,"太田(良)":-23.0},"ranks":{"太田(一)":1,"永川":null,"高谷":4,"久保":2,"佐々木":null,"神田":null,"太田(良)":3}},{"round":"③","scores":{"太田(一)":-43.0,"永川":null,"高谷":-24.0,"久保":49.0,"佐々木":null,"神田":null,"太田(良)":18.0},"ranks":{"太田(一)":4,"永川":null,"高谷":3,"久保":1,"佐々木":null,"神田":null,"太田(良)":2}},{"round":"④","scores":{"太田(一)":-76.0,"永川":null,"高谷":92.0,"久保":2.0,"佐々木":null,"神田":null,"太田(良)":-18.0},"ranks":{"太田(一)":4,"永川":null,"高谷":1,"久保":2,"佐々木":null,"神田":null,"太田(良)":3}},{"round":"⑤","scores":{"太田(一)":-34.0,"永川":null,"高谷":40.0,"久保":9.0,"佐々木":null,"神田":null,"太田(良)":-15.0},"ranks":{"太田(一)":4,"永川":null,"高谷":1,"久保":2,"佐々木":null,"神田":null,"太田(良)":3}},{"round":"⑥","scores":{"太田(一)":-15.0,"永川":null,"高谷":-48.0,"久保":56.0,"佐々木":null,"神田":null,"太田(良)":7.0},"ranks":{"太田(一)":3,"永川":null,"高谷":4,"久保":1,"佐々木":null,"神田":null,"太田(良)":2}},{"round":"⑦","scores":{"太田(一)":-4.0,"永川":null,"高谷":-26.0,"久保":82.0,"佐々木":null,"神田":null,"太田(良)":-52.0},"ranks":{"太田(一)":2,"永川":null,"高谷":3,"久保":1,"佐々木":null,"神田":null,"太田(良)":4}},{"round":"⑧","scores":{"太田(一)":-26.0,"永川":null,"高谷":16.0,"久保":-42.0,"佐々木":null,"神田":null,"太田(良)":52.0},"ranks":{"太田(一)":3,"永川":null,"高谷":2,"久保":4,"佐々木":null,"神田":null,"太田(良)":1}},{"round":"⑨","scores":{"太田(一)":3.0,"永川":null,"高谷":-24.0,"久保":-37.0,"佐々木":null,"神田":null,"太田(良)":58.0},"ranks":{"太田(一)":2,"永川":null,"高谷":3,"久保":4,"佐々木":null,"神田":null,"太田(良)":1}}],"chips":{"太田(一)":0.0,"永川":0,"高谷":-32.0,"久保":8.0,"佐々木":0,"神田":0,"太田(良)":24.0},"players":["太田(一)","永川","高谷","久保","佐々木","神田","太田(良)"],"season":"2024"},{"date":"2024-09-06","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":54.0,"永川":null,"高谷":-51.0,"久保":null,"佐々木":-17.0,"神田":null,"太田(良)":14.0},"ranks":{"太田(一)":1,"永川":null,"高谷":4,"久保":null,"佐々木":3,"神田":null,"太田(良)":2}},{"round":"②","scores":{"太田(一)":62.0,"永川":null,"高谷":16.0,"久保":null,"佐々木":-30.0,"神田":null,"太田(良)":-48.0},"ranks":{"太田(一)":1,"永川":null,"高谷":2,"久保":null,"佐々木":3,"神田":null,"太田(良)":4}},{"round":"③","scores":{"太田(一)":49.0,"永川":null,"高谷":-17.0,"久保":null,"佐々木":-38.0,"神田":null,"太田(良)":6.0},"ranks":{"太田(一)":1,"永川":null,"高谷":3,"久保":null,"佐々木":4,"神田":null,"太田(良)":2}},{"round":"④","scores":{"太田(一)":-15.0,"永川":null,"高谷":10.0,"久保":null,"佐々木":48.0,"神田":null,"太田(良)":-43.0},"ranks":{"太田(一)":3,"永川":null,"高谷":2,"久保":null,"佐々木":1,"神田":null,"太田(良)":4}},{"round":"⑤","scores":{"太田(一)":-50.0,"永川":null,"高谷":15.0,"久保":null,"佐々木":-28.0,"神田":null,"太田(良)":63.0},"ranks":{"太田(一)":4,"永川":null,"高谷":2,"久保":null,"佐々木":3,"神田":null,"太田(良)":1}},{"round":"⑥","scores":{"太田(一)":46.0,"永川":null,"高谷":-48.0,"久保":null,"佐々木":-10.0,"神田":null,"太田(良)":12.0},"ranks":{"太田(一)":1,"永川":null,"高谷":4,"久保":null,"佐々木":3,"神田":null,"太田(良)":2}},{"round":"⑦","scores":{"太田(一)":66.0,"永川":null,"高谷":-50.0,"久保":null,"佐々木":-21.0,"神田":null,"太田(良)":5.0},"ranks":{"太田(一)":1,"永川":null,"高谷":4,"久保":null,"佐々木":3,"神田":null,"太田(良)":2}}],"chips":{"太田(一)":4.0,"永川":0,"高谷":-14.0,"久保":0,"佐々木":-6.0,"神田":0,"太田(良)":16.0},"players":["太田(一)","永川","高谷","久保","佐々木","神田","太田(良)"],"season":"2024"},{"date":"2024-10-11","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":51.0,"永川":null,"高谷":9.0,"久保":null,"佐々木":null,"神田":-13.0,"太田(良)":-47.0},"ranks":{"太田(一)":1,"永川":null,"高谷":2,"久保":null,"佐々木":null,"神田":3,"太田(良)":4}},{"round":"②","scores":{"太田(一)":49.0,"永川":null,"高谷":-37.0,"久保":null,"佐々木":null,"神田":7.0,"太田(良)":-19.0},"ranks":{"太田(一)":1,"永川":null,"高谷":4,"久保":null,"佐々木":null,"神田":2,"太田(良)":3}},{"round":"③","scores":{"太田(一)":13.0,"永川":null,"高谷":44.0,"久保":null,"佐々木":null,"神田":-37.0,"太田(良)":-20.0},"ranks":{"太田(一)":2,"永川":null,"高谷":1,"久保":null,"佐々木":null,"神田":4,"太田(良)":3}},{"round":"④","scores":{"太田(一)":19.0,"永川":null,"高谷":-52.0,"久保":null,"佐々木":null,"神田":-22.0,"太田(良)":55.0},"ranks":{"太田(一)":2,"永川":null,"高谷":4,"久保":null,"佐々木":null,"神田":3,"太田(良)":1}},{"round":"⑤","scores":{"太田(一)":79.0,"永川":null,"高谷":-33.0,"久保":null,"佐々木":null,"神田":-1.0,"太田(良)":-45.0},"ranks":{"太田(一)":1,"永川":null,"高谷":3,"久保":null,"佐々木":null,"神田":2,"太田(良)":4}},{"round":"⑥","scores":{"太田(一)":-3.0,"永川":null,"高谷":82.0,"久保":null,"佐々木":null,"神田":-28.0,"太田(良)":-51.0},"ranks":{"太田(一)":2,"永川":null,"高谷":1,"久保":null,"佐々木":null,"神田":3,"太田(良)":4}},{"round":"⑦","scores":{"太田(一)":4.0,"永川":null,"高谷":58.0,"久保":null,"佐々木":null,"神田":-18.0,"太田(良)":-44.0},"ranks":{"太田(一)":2,"永川":null,"高谷":1,"久保":null,"佐々木":null,"神田":3,"太田(良)":4}}],"chips":{"太田(一)":38.0,"永川":0,"高谷":14.0,"久保":0,"佐々木":0,"神田":-6.0,"太田(良)":-46.0},"players":["太田(一)","永川","高谷","久保","佐々木","神田","太田(良)"],"season":"2024"},{"date":"2024-11-15","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":-30.0,"永川":null,"高谷":-51.0,"久保":null,"佐々木":null,"神田":81.0,"太田(良)":0.0},"ranks":{"太田(一)":3,"永川":null,"高谷":4,"久保":null,"佐々木":null,"神田":1,"太田(良)":2}},{"round":"②","scores":{"太田(一)":-38.0,"永川":null,"高谷":-24.0,"久保":null,"佐々木":null,"神田":9.0,"太田(良)":53.0},"ranks":{"太田(一)":4,"永川":null,"高谷":3,"久保":null,"佐々木":null,"神田":2,"太田(良)":1}},{"round":"③","scores":{"太田(一)":-54.0,"永川":null,"高谷":-7.0,"久保":null,"佐々木":null,"神田":44.0,"太田(良)":17.0},"ranks":{"太田(一)":4,"永川":null,"高谷":3,"久保":null,"佐々木":null,"神田":1,"太田(良)":2}},{"round":"④","scores":{"太田(一)":-58.0,"永川":null,"高谷":-26.0,"久保":null,"佐々木":null,"神田":60.0,"太田(良)":24.0},"ranks":{"太田(一)":4,"永川":null,"高谷":3,"久保":null,"佐々木":null,"神田":1,"太田(良)":2}},{"round":"⑤","scores":{"太田(一)":-56.0,"永川":null,"高谷":74.0,"久保":null,"佐々木":null,"神田":15.0,"太田(良)":-33.0},"ranks":{"太田(一)":4,"永川":null,"高谷":1,"久保":null,"佐々木":null,"神田":2,"太田(良)":3}},{"round":"⑥","scores":{"太田(一)":-51.0,"永川":null,"高谷":57.0,"久保":null,"佐々木":null,"神田":-21.0,"太田(良)":15.0},"ranks":{"太田(一)":4,"永川":null,"高谷":1,"久保":null,"佐々木":null,"神田":3,"太田(良)":2}},{"round":"⑦","scores":{"太田(一)":-44.0,"永川":null,"高谷":65.0,"久保":null,"佐々木":null,"神田":-23.0,"太田(良)":2.0},"ranks":{"太田(一)":4,"永川":null,"高谷":1,"久保":null,"佐々木":null,"神田":3,"太田(良)":2}}],"chips":{"太田(一)":-62.0,"永川":0,"高谷":-18.0,"久保":0,"佐々木":0,"神田":58.0,"太田(良)":22.0},"players":["太田(一)","永川","高谷","久保","佐々木","神田","太田(良)"],"season":"2024"},{"date":"2024-12-26","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":11.0,"永川":null,"高谷":42.0,"久保":-11.0,"佐々木":null,"神田":null,"太田(良)":-42.0},"ranks":{"太田(一)":2,"永川":null,"高谷":1,"久保":3,"佐々木":null,"神田":null,"太田(良)":4}},{"round":"②","scores":{"太田(一)":49.0,"永川":null,"高谷":13.0,"久保":-50.0,"佐々木":null,"神田":null,"太田(良)":-12.0},"ranks":{"太田(一)":1,"永川":null,"高谷":2,"久保":4,"佐々木":null,"神田":null,"太田(良)":3}},{"round":"③","scores":{"太田(一)":69.0,"永川":null,"高谷":-29.0,"久保":2.0,"佐々木":null,"神田":null,"太田(良)":-42.0},"ranks":{"太田(一)":1,"永川":null,"高谷":3,"久保":2,"佐々木":null,"神田":null,"太田(良)":4}},{"round":"④","scores":{"太田(一)":-48.0,"永川":null,"高谷":50.0,"久保":18.0,"佐々木":null,"神田":null,"太田(良)":-20.0},"ranks":{"太田(一)":4,"永川":null,"高谷":1,"久保":2,"佐々木":null,"神田":null,"太田(良)":3}},{"round":"⑤","scores":{"太田(一)":-43.0,"永川":null,"高谷":-24.0,"久保":8.0,"佐々木":null,"神田":null,"太田(良)":59.0},"ranks":{"太田(一)":4,"永川":null,"高谷":3,"久保":2,"佐々木":null,"神田":null,"太田(良)":1}},{"round":"⑥","scores":{"太田(一)":15.0,"永川":null,"高谷":51.0,"久保":-21.0,"佐々木":null,"神田":null,"太田(良)":-45.0},"ranks":{"太田(一)":2,"永川":null,"高谷":1,"久保":3,"佐々木":null,"神田":null,"太田(良)":4}}],"chips":{"太田(一)":22.0,"永川":0,"高谷":14.0,"久保":-8.0,"佐々木":0,"神田":0,"太田(良)":-28.0},"players":["太田(一)","永川","高谷","久保","佐々木","神田","太田(良)"],"season":"2024"},{"date":"2025-02-21","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":4.0,"永川":null,"高谷":48.0,"久保":null,"佐々木":null,"神田":-36.0,"太田(良)":-16.0},"ranks":{"太田(一)":2,"永川":null,"高谷":1,"久保":null,"佐々木":null,"神田":4,"太田(良)":3}},{"round":"②","scores":{"太田(一)":66.0,"永川":null,"高谷":6.0,"久保":null,"佐々木":null,"神田":-30.0,"太田(良)":-42.0},"ranks":{"太田(一)":1,"永川":null,"高谷":2,"久保":null,"佐々木":null,"神田":3,"太田(良)":4}},{"round":"③","scores":{"太田(一)":-29.0,"永川":null,"高谷":-40.0,"久保":null,"佐々木":null,"神田":68.0,"太田(良)":1.0},"ranks":{"太田(一)":3,"永川":null,"高谷":4,"久保":null,"佐々木":null,"神田":1,"太田(良)":2}},{"round":"④","scores":{"太田(一)":2.0,"永川":null,"高谷":-53.0,"久保":null,"佐々木":null,"神田":-21.0,"太田(良)":72.0},"ranks":{"太田(一)":2,"永川":null,"高谷":4,"久保":null,"佐々木":null,"神田":3,"太田(良)":1}},{"round":"⑤","scores":{"太田(一)":-48.0,"永川":null,"高谷":14.0,"久保":null,"佐々木":null,"神田":49.0,"太田(良)":-15.0},"ranks":{"太田(一)":4,"永川":null,"高谷":2,"久保":null,"佐々木":null,"神田":1,"太田(良)":3}},{"round":"⑥","scores":{"太田(一)":-39.0,"永川":null,"高谷":55.0,"久保":null,"佐々木":null,"神田":10.0,"太田(良)":-26.0},"ranks":{"太田(一)":4,"永川":null,"高谷":1,"久保":null,"佐々木":null,"神田":2,"太田(良)":3}}],"chips":{"太田(一)":2.0,"永川":0,"高谷":-26.0,"久保":0,"佐々木":0,"神田":36.0,"太田(良)":-12.0},"players":["太田(一)","永川","高谷","久保","佐々木","神田","太田(良)"],"season":"2024"},{"date":"2025-03-07","venue":"神田　麻雀ぽっち","rounds":[{"round":"①","scores":{"太田(一)":-55.0,"永川":null,"高谷":61.0,"久保":-32.0,"佐々木":null,"神田":26.0,"太田(良)":null},"ranks":{"太田(一)":4,"永川":null,"高谷":1,"久保":3,"佐々木":null,"神田":2,"太田(良)":null}},{"round":"②","scores":{"太田(一)":-42.0,"永川":null,"高谷":-1.0,"久保":-31.0,"佐々木":null,"神田":74.0,"太田(良)":null},"ranks":{"太田(一)":4,"永川":null,"高谷":2,"久保":3,"佐々木":null,"神田":1,"太田(良)":null}},{"round":"③","scores":{"太田(一)":-39.0,"永川":null,"高谷":60.0,"久保":4.0,"佐々木":null,"神田":-25.0,"太田(良)":null},"ranks":{"太田(一)":4,"永川":null,"高谷":1,"久保":2,"佐々木":null,"神田":3,"太田(良)":null}},{"round":"④","scores":{"太田(一)":-34.0,"永川":null,"高谷":-44.0,"久保":69.0,"佐々木":null,"神田":9.0,"太田(良)":null},"ranks":{"太田(一)":3,"永川":null,"高谷":4,"久保":1,"佐々木":null,"神田":2,"太田(良)":null}},{"round":"⑤","scores":{"太田(一)":49.0,"永川":null,"高谷":-18.0,"久保":-44.0,"佐々木":null,"神田":13.0,"太田(良)":null},"ranks":{"太田(一)":1,"永川":null,"高谷":3,"久保":4,"佐々木":null,"神田":2,"太田(良)":null}}],"chips":{"太田(一)":-10.0,"永川":0,"高谷":12.0,"久保":-2.0,"佐々木":0,"神田":0.0,"太田(良)":0},"players":["太田(一)","永川","高谷","久保","佐々木","神田","太田(良)"],"season":"2024"},{"date":"2025-03-21","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":0.0,"永川":null,"高谷":54.0,"久保":null,"佐々木":null,"神田":-20.0,"太田(良)":-34.0},"ranks":{"太田(一)":2,"永川":null,"高谷":1,"久保":null,"佐々木":null,"神田":3,"太田(良)":4}},{"round":"②","scores":{"太田(一)":-38.0,"永川":null,"高谷":44.0,"久保":null,"佐々木":null,"神田":-15.0,"太田(良)":9.0},"ranks":{"太田(一)":4,"永川":null,"高谷":1,"久保":null,"佐々木":null,"神田":3,"太田(良)":2}},{"round":"③","scores":{"太田(一)":-11.0,"永川":null,"高谷":12.0,"久保":null,"佐々木":null,"神田":-51.0,"太田(良)":50.0},"ranks":{"太田(一)":3,"永川":null,"高谷":2,"久保":null,"佐々木":null,"神田":4,"太田(良)":1}},{"round":"④","scores":{"太田(一)":54.0,"永川":null,"高谷":-37.0,"久保":null,"佐々木":null,"神田":-19.0,"太田(良)":2.0},"ranks":{"太田(一)":1,"永川":null,"高谷":4,"久保":null,"佐々木":null,"神田":3,"太田(良)":2}},{"round":"⑤","scores":{"太田(一)":60.0,"永川":null,"高谷":-21.0,"久保":null,"佐々木":null,"神田":-51.0,"太田(良)":12.0},"ranks":{"太田(一)":1,"永川":null,"高谷":3,"久保":null,"佐々木":null,"神田":4,"太田(良)":2}},{"round":"⑥","scores":{"太田(一)":79.0,"永川":null,"高谷":-37.0,"久保":null,"佐々木":null,"神田":9.0,"太田(良)":-51.0},"ranks":{"太田(一)":1,"永川":null,"高谷":3,"久保":null,"佐々木":null,"神田":2,"太田(良)":4}}],"chips":{"太田(一)":50.0,"永川":0,"高谷":18.0,"久保":0,"佐々木":0,"神田":-40.0,"太田(良)":-28.0},"players":["太田(一)","永川","高谷","久保","佐々木","神田","太田(良)"],"season":"2024"},{"date":"2023-03-10","venue":"麻雀サン(高田馬場)","rounds":[{"round":"①","scores":{"太田(一)":-23.0,"永川":68.0,"高谷":5.0,"太田(良)":-50.0},"ranks":{"太田(一)":3,"永川":1,"高谷":2,"太田(良)":4}},{"round":"②","scores":{"太田(一)":8.0,"永川":45.0,"高谷":-18.0,"太田(良)":-35.0},"ranks":{"太田(一)":2,"永川":1,"高谷":3,"太田(良)":4}},{"round":"③","scores":{"太田(一)":-52.0,"永川":56.0,"高谷":10.0,"太田(良)":-14.0},"ranks":{"太田(一)":4,"永川":1,"高谷":2,"太田(良)":3}},{"round":"④","scores":{"太田(一)":-40.0,"永川":66.0,"高谷":0.0,"太田(良)":-26.0},"ranks":{"太田(一)":4,"永川":1,"高谷":2,"太田(良)":3}},{"round":"⑤","scores":{"太田(一)":76.0,"永川":11.0,"高谷":-55.0,"太田(良)":-32.0},"ranks":{"太田(一)":1,"永川":2,"高谷":4,"太田(良)":3}},{"round":"⑥","scores":{"太田(一)":3.0,"永川":-21.0,"高谷":-33.0,"太田(良)":51.0},"ranks":{"太田(一)":2,"永川":3,"高谷":4,"太田(良)":1}}],"chips":{"太田(一)":22.0,"永川":30.0,"高谷":-34.0,"太田(良)":-18.0},"players":["太田(一)","永川","高谷","太田(良)"],"season":"2023"},{"date":"2023-04-14","venue":"麻雀トレイン(新橋)","rounds":[{"round":"①","scores":{"太田(一)":63.0,"永川":-27.0,"高谷":18.0,"太田(良)":-54.0},"ranks":{"太田(一)":1,"永川":3,"高谷":2,"太田(良)":4}},{"round":"②","scores":{"太田(一)":12.0,"永川":68.0,"高谷":-51.0,"太田(良)":-29.0},"ranks":{"太田(一)":2,"永川":1,"高谷":4,"太田(良)":3}},{"round":"③","scores":{"太田(一)":28.0,"永川":41.0,"高谷":-52.0,"太田(良)":-17.0},"ranks":{"太田(一)":2,"永川":1,"高谷":4,"太田(良)":3}},{"round":"④","scores":{"太田(一)":-17.0,"永川":16.0,"高谷":51.0,"太田(良)":-50.0},"ranks":{"太田(一)":3,"永川":2,"高谷":1,"太田(良)":4}},{"round":"⑤","scores":{"太田(一)":-28.0,"永川":70.0,"高谷":-48.0,"太田(良)":6.0},"ranks":{"太田(一)":3,"永川":1,"高谷":4,"太田(良)":2}}],"chips":{"太田(一)":14.0,"永川":16.0,"高谷":-15.0,"太田(良)":-15.0},"players":["太田(一)","永川","高谷","太田(良)"],"season":"2023"},{"date":"2023-05-19","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":-17.0,"永川":9.0,"高谷":-45.0,"太田(良)":53.0},"ranks":{"太田(一)":3,"永川":2,"高谷":4,"太田(良)":1}},{"round":"②","scores":{"太田(一)":-51.0,"永川":68.0,"高谷":5.0,"太田(良)":-22.0},"ranks":{"太田(一)":4,"永川":1,"高谷":2,"太田(良)":3}},{"round":"③","scores":{"太田(一)":8.0,"永川":-32.0,"高谷":46.0,"太田(良)":-22.0},"ranks":{"太田(一)":2,"永川":4,"高谷":1,"太田(良)":3}},{"round":"④","scores":{"太田(一)":50.0,"永川":7.0,"高谷":-40.0,"太田(良)":-17.0},"ranks":{"太田(一)":1,"永川":2,"高谷":4,"太田(良)":3}},{"round":"⑤","scores":{"太田(一)":66.0,"永川":1.0,"高谷":-27.0,"太田(良)":-40.0},"ranks":{"太田(一)":1,"永川":2,"高谷":3,"太田(良)":4}},{"round":"⑥","scores":{"太田(一)":-22.0,"永川":21.0,"高谷":57.0,"太田(良)":-56.0},"ranks":{"太田(一)":3,"永川":2,"高谷":1,"太田(良)":4}},{"round":"⑦","scores":{"太田(一)":8.0,"永川":-15.0,"高谷":-38.0,"太田(良)":45.0},"ranks":{"太田(一)":2,"永川":3,"高谷":4,"太田(良)":1}}],"chips":{"太田(一)":6.0,"永川":0.0,"高谷":-1.0,"太田(良)":-5.0},"players":["太田(一)","永川","高谷","太田(良)"],"season":"2023"},{"date":"2023-06-09","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":42.0,"永川":5.0,"高谷":-16.0,"太田(良)":-31.0},"ranks":{"太田(一)":1,"永川":2,"高谷":3,"太田(良)":4}},{"round":"②","scores":{"太田(一)":71.0,"永川":-25.0,"高谷":4.0,"太田(良)":-50.0},"ranks":{"太田(一)":1,"永川":3,"高谷":2,"太田(良)":4}},{"round":"③","scores":{"太田(一)":-22.0,"永川":10.0,"高谷":-52.0,"太田(良)":64.0},"ranks":{"太田(一)":3,"永川":2,"高谷":4,"太田(良)":1}},{"round":"④","scores":{"太田(一)":-43.0,"永川":-27.0,"高谷":60.0,"太田(良)":10.0},"ranks":{"太田(一)":4,"永川":3,"高谷":1,"太田(良)":2}},{"round":"⑤","scores":{"太田(一)":-41.0,"永川":78.0,"高谷":-29.0,"太田(良)":-8.0},"ranks":{"太田(一)":4,"永川":1,"高谷":3,"太田(良)":2}},{"round":"⑥","scores":{"太田(一)":13.0,"永川":-9.0,"高谷":-47.0,"太田(良)":43.0},"ranks":{"太田(一)":2,"永川":3,"高谷":4,"太田(良)":1}},{"round":"⑦","scores":{"太田(一)":47.0,"永川":-23.0,"高谷":10.0,"太田(良)":-34.0},"ranks":{"太田(一)":1,"永川":3,"高谷":2,"太田(良)":4}}],"chips":{"太田(一)":10.0,"永川":10.0,"高谷":-28.0,"太田(良)":8.0},"players":["太田(一)","永川","高谷","太田(良)"],"season":"2023"},{"date":"2023-07-28","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":48.0,"永川":6.0,"高谷":-36.0,"太田(良)":-18.0},"ranks":{"太田(一)":1,"永川":2,"高谷":4,"太田(良)":3}},{"round":"②","scores":{"太田(一)":-52.0,"永川":-1.0,"高谷":76.0,"太田(良)":-23.0},"ranks":{"太田(一)":4,"永川":2,"高谷":1,"太田(良)":3}},{"round":"③","scores":{"太田(一)":7.0,"永川":-27.0,"高谷":59.0,"太田(良)":-39.0},"ranks":{"太田(一)":2,"永川":3,"高谷":1,"太田(良)":4}},{"round":"④","scores":{"太田(一)":16.0,"永川":-53.0,"高谷":-20.0,"太田(良)":57.0},"ranks":{"太田(一)":2,"永川":4,"高谷":3,"太田(良)":1}},{"round":"⑤","scores":{"太田(一)":63.0,"永川":7.0,"高谷":-20.0,"太田(良)":-50.0},"ranks":{"太田(一)":1,"永川":2,"高谷":3,"太田(良)":4}},{"round":"⑥","scores":{"太田(一)":16.0,"永川":-19.0,"高谷":-56.0,"太田(良)":59.0},"ranks":{"太田(一)":2,"永川":3,"高谷":4,"太田(良)":1}},{"round":"⑦","scores":{"太田(一)":-53.0,"永川":13.0,"高谷":-22.0,"太田(良)":62.0},"ranks":{"太田(一)":4,"永川":2,"高谷":3,"太田(良)":1}}],"chips":{"太田(一)":-12.0,"永川":-20.0,"高谷":-14.0,"太田(良)":46.0},"players":["太田(一)","永川","高谷","太田(良)"],"season":"2023"},{"date":"2023-09-15","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":-47.0,"永川":70.0,"高谷":-26.0,"太田(良)":3.0},"ranks":{"太田(一)":4,"永川":1,"高谷":3,"太田(良)":2}},{"round":"②","scores":{"太田(一)":60.0,"永川":16.0,"高谷":-16.0,"太田(良)":-60.0},"ranks":{"太田(一)":1,"永川":2,"高谷":3,"太田(良)":4}},{"round":"③","scores":{"太田(一)":-19.0,"永川":69.0,"高谷":-54.0,"太田(良)":4.0},"ranks":{"太田(一)":3,"永川":1,"高谷":4,"太田(良)":2}},{"round":"④","scores":{"太田(一)":-16.0,"永川":42.0,"高谷":8.0,"太田(良)":-34.0},"ranks":{"太田(一)":3,"永川":1,"高谷":2,"太田(良)":4}},{"round":"⑤","scores":{"太田(一)":-34.0,"永川":59.0,"高谷":-37.0,"太田(良)":12.0},"ranks":{"太田(一)":3,"永川":1,"高谷":4,"太田(良)":2}},{"round":"⑥","scores":{"太田(一)":-46.0,"永川":-21.0,"高谷":56.0,"太田(良)":11.0},"ranks":{"太田(一)":4,"永川":3,"高谷":1,"太田(良)":2}},{"round":"⑦","scores":{"太田(一)":15.0,"永川":-56.0,"高谷":51.0,"太田(良)":-10.0},"ranks":{"太田(一)":2,"永川":4,"高谷":1,"太田(良)":3}},{"round":"⑧","scores":{"太田(一)":51.0,"永川":15.0,"高谷":-17.0,"太田(良)":-49.0},"ranks":{"太田(一)":1,"永川":2,"高谷":3,"太田(良)":4}}],"chips":{"太田(一)":1.0,"永川":6.0,"高谷":-12.0,"太田(良)":5.0},"players":["太田(一)","永川","高谷","太田(良)"],"season":"2023"},{"date":"2023-11-01","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":10.0,"永川":-36.0,"高谷":41.0,"太田(良)":-15.0},"ranks":{"太田(一)":2,"永川":4,"高谷":1,"太田(良)":3}},{"round":"②","scores":{"太田(一)":7.0,"永川":46.0,"高谷":-16.0,"太田(良)":-37.0},"ranks":{"太田(一)":2,"永川":1,"高谷":3,"太田(良)":4}},{"round":"③","scores":{"太田(一)":55.0,"永川":6.0,"高谷":-41.0,"太田(良)":-20.0},"ranks":{"太田(一)":1,"永川":2,"高谷":4,"太田(良)":3}},{"round":"④","scores":{"太田(一)":-63.0,"永川":-20.0,"高谷":22.0,"太田(良)":61.0},"ranks":{"太田(一)":4,"永川":3,"高谷":2,"太田(良)":1}},{"round":"⑤","scores":{"太田(一)":-45.0,"永川":-14.0,"高谷":50.0,"太田(良)":9.0},"ranks":{"太田(一)":4,"永川":3,"高谷":1,"太田(良)":2}},{"round":"⑥","scores":{"太田(一)":-54.0,"永川":-24.0,"高谷":9.0,"太田(良)":69.0},"ranks":{"太田(一)":4,"永川":3,"高谷":2,"太田(良)":1}}],"chips":{"太田(一)":-12.0,"永川":-20.0,"高谷":10.0,"太田(良)":22.0},"players":["太田(一)","永川","高谷","太田(良)"],"season":"2023"},{"date":"2023-12-19","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":54.0,"永川":-52.0,"高谷":-24.0,"太田(良)":22.0},"ranks":{"太田(一)":1,"永川":4,"高谷":3,"太田(良)":2}},{"round":"②","scores":{"太田(一)":-55.0,"永川":9.0,"高谷":68.0,"太田(良)":-22.0},"ranks":{"太田(一)":4,"永川":2,"高谷":1,"太田(良)":3}},{"round":"③","scores":{"太田(一)":-60.0,"永川":23.0,"高谷":72.0,"太田(良)":-35.0},"ranks":{"太田(一)":4,"永川":2,"高谷":1,"太田(良)":3}},{"round":"④","scores":{"太田(一)":-10.0,"永川":13.0,"高谷":43.0,"太田(良)":-46.0},"ranks":{"太田(一)":3,"永川":2,"高谷":1,"太田(良)":4}},{"round":"⑤","scores":{"太田(一)":-32.0,"永川":43.0,"高谷":-18.0,"太田(良)":7.0},"ranks":{"太田(一)":4,"永川":1,"高谷":3,"太田(良)":2}},{"round":"⑥","scores":{"太田(一)":-41.0,"永川":-20.0,"高谷":12.0,"太田(良)":49.0},"ranks":{"太田(一)":4,"永川":3,"高谷":2,"太田(良)":1}},{"round":"⑦","scores":{"太田(一)":-15.0,"永川":57.0,"高谷":-52.0,"太田(良)":10.0},"ranks":{"太田(一)":3,"永川":1,"高谷":4,"太田(良)":2}},{"round":"⑧","scores":{"太田(一)":72.0,"永川":-2.0,"高谷":-40.0,"太田(良)":-30.0},"ranks":{"太田(一)":1,"永川":2,"高谷":4,"太田(良)":3}}],"chips":{"太田(一)":-36.0,"永川":50.0,"高谷":2.0,"太田(良)":-16.0},"players":["太田(一)","永川","高谷","太田(良)"],"season":"2023"},{"date":"2024-02-09","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":-23.0,"永川":57.0,"高谷":10.0,"太田(良)":null},"ranks":{"太田(一)":3,"永川":1,"高谷":2,"太田(良)":null}},{"round":"②","scores":{"太田(一)":-47.0,"永川":-25.0,"高谷":19.0,"太田(良)":null},"ranks":{"太田(一)":3,"永川":2,"高谷":1,"太田(良)":null}},{"round":"③","scores":{"太田(一)":13.0,"永川":46.0,"高谷":-9.0,"太田(良)":null},"ranks":{"太田(一)":2,"永川":1,"高谷":3,"太田(良)":null}},{"round":"④","scores":{"太田(一)":-35.0,"永川":10.0,"高谷":-20.0,"太田(良)":null},"ranks":{"太田(一)":3,"永川":1,"高谷":2,"太田(良)":null}},{"round":"⑤","scores":{"太田(一)":51.0,"永川":-20.0,"高谷":12.0,"太田(良)":null},"ranks":{"太田(一)":1,"永川":3,"高谷":2,"太田(良)":null}}],"chips":{"太田(一)":-14.0,"永川":-8.0,"高谷":12.0,"太田(良)":0},"players":["太田(一)","永川","高谷","太田(良)"],"season":"2023"},{"date":"2024-03-01","venue":"柳　赤坂店","rounds":[{"round":"①","scores":{"太田(一)":5.0,"永川":null,"高谷":49.0,"太田(良)":-20.0},"ranks":{"太田(一)":2,"永川":null,"高谷":1,"太田(良)":3}},{"round":"②","scores":{"太田(一)":64.0,"永川":null,"高谷":-19.0,"太田(良)":-53.0},"ranks":{"太田(一)":1,"永川":null,"高谷":2,"太田(良)":3}},{"round":"③","scores":{"太田(一)":60.0,"永川":null,"高谷":-53.0,"太田(良)":-20.0},"ranks":{"太田(一)":1,"永川":null,"高谷":3,"太田(良)":2}},{"round":"④","scores":{"太田(一)":-52.0,"永川":null,"高谷":61.0,"太田(良)":-18.0},"ranks":{"太田(一)":3,"永川":null,"高谷":1,"太田(良)":2}},{"round":"⑤","scores":{"太田(一)":-40.0,"永川":null,"高谷":49.0,"太田(良)":13.0},"ranks":{"太田(一)":3,"永川":null,"高谷":1,"太田(良)":2}},{"round":"⑥","scores":{"太田(一)":0.0,"永川":null,"高谷":-22.0,"太田(良)":-36.0},"ranks":{"太田(一)":1,"永川":1,"高谷":2,"太田(良)":3}}],"chips":{"太田(一)":36.0,"永川":0,"高谷":-12.0,"太田(良)":-28.0},"players":["太田(一)","永川","高谷","太田(良)"],"season":"2023"}];
+
+const PLAYER_COLORS = ['#1a6b3c','#1a5fa8','#c8991a','#b03020','#5b21b6','#92400e','#166534','#9d174d','#0f766e','#b45309'];
+let allSessions=[], userSessions=[], seasonFilter='all', graphChart=null;
+const STORAGE_KEY='yanagi_user_v2';
+const ALL_PLAYERS=['太田(一)','高谷','神田','太田(良)','川瀬','久保','永川','佐々木','平野'];
+
+function loadData(){
+  allSessions=[...PRESET_SESSIONS];
+  try{userSessions=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){userSessions=[];}
+  allSessions=[...allSessions,...userSessions].sort((a,b)=>b.date.localeCompare(a.date));
+}
+
+function getFiltered(type, val){
+  if(type==='season') return val==='all'?allSessions:allSessions.filter(s=>s.season===val);
+  if(type==='venue') return val==='all'?allSessions:allSessions.filter(s=>normalizeVenue(s.venue)===val);
+  return allSessions;
+}
+
+function normalizeVenue(v){
+  if(!v) return '';
+  return v.replace(/\u3000/g,' ').replace(/\s+/g,' ').trim();
+}
+
+function getSeasons(){
+  const s=new Set(allSessions.map(s=>s.season).filter(Boolean));
+  return [...s].sort((a,b)=>b.localeCompare(a));
+}
+
+function buildSeasonFilter(){
+  const bar=document.getElementById('season-filter');
+  const seasons=getSeasons();
+  // keep the label span, replace buttons
+  bar.innerHTML=`<span style="font-size:.76rem;color:var(--muted);">年度:</span>
+    <button class="filter-btn ${seasonFilter==='all'?'active':''}" onclick="setSeason(this,'all')">全て</button>
+    ${seasons.map(s=>`<button class="filter-btn ${seasonFilter===s?'active':''}" onclick="setSeason(this,'${s}')">${s}</button>`).join('')}`;
+}
+
+function buildGraphSeasonSelect(){
+  const sel=document.getElementById('graph-season');
+  const cur=sel.value||'all';
+  const seasons=getSeasons();
+  sel.innerHTML=`<option value="all">全年度</option>`+seasons.map(s=>`<option value="${s}">${s}年度</option>`).join('');
+  sel.value=seasons.includes(cur)?cur:'all';
+}
+
+function getVenues(){
+  const s=new Set(allSessions.map(s=>normalizeVenue(s.venue)).filter(Boolean));
+  return [...s].sort();
+}
+
+function calcPlayerStats(sessions){
+  const stats={};
+  for(const sess of sessions){
+    for(const r of sess.rounds){
+      for(const [name,score] of Object.entries(r.scores)){
+        if(score===null) continue;
+        if(!stats[name]) stats[name]={games:0,hanso:0,wins:0,ranks:[0,0,0,0],totalScore:0,totalChip:0,sumRank:0};
+        const s=stats[name];
+        s.hanso++;
+        if(r.ranks[name]){s.ranks[r.ranks[name]-1]++;s.sumRank+=r.ranks[name];if(r.ranks[name]===1)s.wins++;}
+        s.totalScore+=score;
+      }
+    }
+    if(sess.chips){
+      for(const [name,c] of Object.entries(sess.chips)){
+        if(stats[name]&&c!==null&&c!==0) stats[name].totalChip+=c;
+      }
+    }
+    const seen=new Set();
+    for(const r of sess.rounds) for(const [n,v] of Object.entries(r.scores)) if(v!==null) seen.add(n);
+    seen.forEach(n=>{if(stats[n]) stats[n].games++;});
+  }
+  for(const s of Object.values(stats)) s.avgRank=s.hanso>0?s.sumRank/s.hanso:0;
+  return stats;
+}
+
+// --- HOME ---
+function getCurrentSeason(){
+  const now=new Date(), y=now.getFullYear(), m=now.getMonth()+1;
+  return m<=3?String(y-1):String(y);
+}
+function renderHome(){
+  const currentSeason=getCurrentSeason();
+  const seasonSessions=getFiltered('season',currentSeason);
+
+  // ---- ランキングカード ----
+  const stats=calcPlayerStats(seasonSessions);
+  const totalGames=seasonSessions.length;
+  const totalHanso=seasonSessions.reduce((t,s)=>t+s.rounds.filter(r=>r.round!=='チップ').length,0);
+  document.getElementById('home-ranking-title').textContent=
+    `🏆 ${currentSeason}年度 ランキング（対局日数：${totalGames}、総半荘数：${totalHanso}）`;
+  const rankIcons=['🥇','🥈','🥉'];
+  const sorted=Object.entries(stats).sort((a,b)=>(b[1].totalScore+b[1].totalChip)-(a[1].totalScore+a[1].totalChip));
+  document.getElementById('player-standings').innerHTML=sorted.length
+    ? sorted.map(([name,s],i)=>{
+        const r1pct=s.hanso?Math.round(s.wins/s.hanso*100):0;
+        const total=s.totalScore+s.totalChip;
+        const rankDisp=i<3
+          ? `<span style="font-size:1.6rem;line-height:1;">${rankIcons[i]}</span>`
+          : `<span style="width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:var(--muted);">${i+1}</span>`;
+        return `<div class="player-row">
+          <div style="flex-shrink:0;width:38px;text-align:center;">${rankDisp}</div>
+          <div style="flex:1"><div class="player-name">${name}</div>
+          <div class="player-stats">${s.games}対局 / ${s.hanso}半荘 / 1位率${r1pct}% / 平均${s.avgRank.toFixed(2)}位</div></div>
+          <div style="text-align:right">
+            <div style="font-size:1.05rem;font-weight:700;color:${total>=0?'var(--green-mid)':'var(--danger)'}">
+              ${total>=0?'+':''}${total.toLocaleString()}</div>
+            <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">得点 ${s.totalScore>=0?'+':''}${s.totalScore} / chip ${s.totalChip>=0?'+':''}${s.totalChip}</div>
+          </div></div>`;
+      }).join('')
+    : '<p style="color:var(--muted);padding:1rem;text-align:center">今年度のデータはまだありません</p>';
+
+  // ---- 店舗別利用実績カード ----
+  document.getElementById('home-venue-title').textContent=`🏠 ${currentSeason}年度 店舗別利用実績`;
+  const venueMap={};
+  for(const sess of seasonSessions){
+    const v=normalizeVenue(sess.venue)||'（未設定）';
+    if(!venueMap[v]) venueMap[v]={games:0,hanso:0};
+    venueMap[v].games++;
+    venueMap[v].hanso+=sess.rounds.filter(r=>r.round!=='チップ').length;
+  }
+  const venueList=Object.entries(venueMap).sort((a,b)=>b[1].games-a[1].games);
+  const venueIcons=['🥇','🥈','🥉'];
+  document.getElementById('venue-standings').innerHTML=venueList.length
+    ? `<div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>店舗名</th><th style="text-align:center">対局日数</th><th style="text-align:center">総半荘数</th></tr></thead>
+        <tbody>${venueList.map(([name,v],i)=>`
+          <tr>
+            <td style="font-size:.9rem">${venueIcons[i]||i+1}</td>
+            <td style="font-weight:600">${name}</td>
+            <td style="text-align:center">${v.games}日</td>
+            <td style="text-align:center">${v.hanso}半荘</td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>`
+    : '<p style="color:var(--muted);padding:1rem;text-align:center">今年度のデータはまだありません</p>';
+}
+
+// --- HISTORY ---
+function setSeason(btn,s){
+  document.querySelectorAll('#season-filter .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); seasonFilter=s; renderHistory();
+}
+function renderHistory(){
+  buildSeasonFilter();
+  const q=document.getElementById('search-h').value.trim().toLowerCase();
+  let sessions=getFiltered('season',seasonFilter);
+  if(q) sessions=sessions.filter(s=>normalizeVenue(s.venue).toLowerCase().includes(q)||s.rounds.some(r=>Object.keys(r.scores).some(p=>p.toLowerCase().includes(q))));
+  const el=document.getElementById('history-list');
+  if(!sessions.length){el.innerHTML='<p style="color:var(--muted);padding:1rem;text-align:center">データがありません</p>';return;}
+  el.innerHTML=sessions.map((sess,i)=>{
+    const parts=[...new Set(sess.rounds.flatMap(r=>Object.keys(r.scores).filter(p=>r.scores[p]!==null)))];
+    const rc=sess.rounds.filter(r=>r.round!=='チップ').length;
+    const sc={'2023':'s23','2024':'s24','2025':'s25','2026':'s26'}[sess.season]||'s25';
+    // ユーザーデータかどうか判定（userSessionsに同じdateとvenueのものがあるか）
+    const uIdx=userSessions.findIndex(u=>u.date===sess.date&&u.venue===sess.venue);
+    const isEditable=uIdx>=0;
+    const editBtns=isEditable?`
+      <div style="display:flex;gap:6px;padding:8px 14px;background:var(--surface);border-top:1px solid var(--border);">
+        <button class="btn btn-secondary" style="font-size:.75rem;padding:5px 12px;" onclick="editSession(${uIdx})">✏️ 情報を修正</button>
+        <button class="btn btn-secondary" style="font-size:.75rem;padding:5px 12px;" onclick="addRoundToSession(${uIdx})">＋ 半荘を追加</button>
+        <button class="btn btn-secondary" style="font-size:.75rem;padding:5px 12px;color:var(--danger);" onclick="deleteSession(${uIdx})">🗑 削除</button>
+      </div>`:'';
+    return `<div class="session-block">
+      <div class="session-header" onclick="toggleSession(${i})">
+        <span class="season-badge ${sc}">${sess.season}年度</span>
+        <span style="font-weight:600;font-size:.9rem">${sess.date.replace(/-/g,'/')}</span>
+        <span style="color:var(--muted);font-size:.82rem">${normalizeVenue(sess.venue)||''}</span>
+        <span style="color:var(--muted);font-size:.78rem;margin-left:auto">${rc}半荘 / ${parts.join('・')}</span>
+        <span style="font-size:.75rem;color:var(--muted)">▼</span>
+      </div>
+      <div class="session-content" id="sess-${i}">
+        ${renderSessionDetail(sess)}
+        ${editBtns}
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleSession(i){document.getElementById('sess-'+i).classList.toggle('open');}
+function renderSessionDetail(sess){
+  const parts=[...new Set(sess.rounds.flatMap(r=>Object.keys(r.scores).filter(p=>r.scores[p]!==null)))];
+  const chipRow=sess.chips?`<tr style="background:var(--gold-light)"><td style="font-weight:600">チップ</td>${parts.map(p=>{const c=sess.chips[p]||0;return `<td><span class="chip-badge">${c>=0?'+':''}${c}</span></td>`;}).join('')}</tr>`:'';
+  const rows=sess.rounds.filter(r=>r.round!=='チップ').map(r=>`<tr><td style="color:var(--muted);font-size:.78rem">${r.round}</td>${parts.map(p=>{
+    const sc=r.scores[p],rk=r.ranks[p];
+    if(sc===null)return '<td style="color:var(--muted)">—</td>';
+    return `<td style="text-align:center"><span class="rank rank-${rk||0}">${rk||'?'}</span><br><span class="${sc>=0?'pos':'neg'}">${sc>=0?'+':''}${sc}</span></td>`;
+  }).join('')}</tr>`).join('');
+  const totals={};parts.forEach(p=>{totals[p]=sess.rounds.filter(r=>r.round!=='チップ').reduce((t,r)=>t+(r.scores[p]||0),0);});
+  return `<div class="table-wrap"><table><thead><tr><th>半荘</th>${parts.map(p=>`<th style="text-align:center">${p}</th>`).join('')}</tr></thead><tbody>${rows}<tr style="background:var(--green-light);font-weight:700"><td>合計</td>${parts.map(p=>`<td style="text-align:center" class="${totals[p]>=0?'pos':'neg'}">${totals[p]>=0?'+':''}${totals[p]}</td>`).join('')}</tr>${chipRow}</tbody></table></div>`;
+}
+
+// --- 履歴編集 ---
+function deleteSession(uIdx){
+  if(!confirm('この対局データを削除しますか？')) return;
+  userSessions.splice(uIdx,1);
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(userSessions));
+  loadData(); renderHistory(); showToast('🗑 削除しました');
+}
+
+function editSession(uIdx){
+  const sess=userSessions[uIdx];
+  // 入力ページへ遷移し、既存データをロード（情報修正モード）
+  showPage('input');
+  // Step1に対局情報をセット
+  document.getElementById('inp-date').value=sess.date;
+  document.getElementById('inp-venue').value=sess.venue||'';
+  const players=sess.players||[...new Set(sess.rounds.flatMap(r=>Object.keys(r.scores).filter(p=>r.scores[p]!==null)))];
+  renderPlayerSlots(players.length);
+  players.forEach((p,i)=>{
+    const el=document.getElementById(`ps${i}`);
+    if(el) el.value=p;
+  });
+  // Step2へ進み、既存半荘データをロード（チップ含む）
+  currentPlayers=players;
+  currentRoundCount=0;
+  document.getElementById('step1-card').style.display='none';
+  document.getElementById('step2-card').style.display='';
+  document.getElementById('step2-meta').textContent=`${sess.date.replace(/-/g,'/')} ／ ${sess.venue||'場所未設定'} ／ ${players.join('・')}`;
+  document.getElementById('rounds-list').innerHTML='';
+  // チップ欄
+  const chipEl=document.getElementById('chip-inputs');
+  chipEl.style.gridTemplateColumns=`repeat(auto-fit,minmax(140px,1fr))`;
+  chipEl.innerHTML=players.map(p=>`<div style="display:flex;align-items:center;gap:6px;">
+    <label style="min-width:60px;font-size:.8rem;">${p}</label>
+    <input type="number" id="chip-${p.replace(/[()]/g,'_')}" placeholder="0" step="1" style="width:80px;" value="${sess.chips&&sess.chips[p]!=null?sess.chips[p]:''}">
+  </div>`).join('');
+  // 既存半荘をロード
+  sess.rounds.forEach((r,b)=>{
+    currentRoundCount++;
+    const idx=currentRoundCount;
+    const rnum=ROUND_NUMS[b]||r.round;
+    const cols=`repeat(${players.length},1fr)`;
+    const list=document.getElementById('rounds-list');
+    const div=document.createElement('div');
+    div.id=`round-block-${idx}`;
+    div.style.cssText='border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;';
+    div.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <span style="font-size:.82rem;font-weight:700;color:var(--muted);">半荘 ${rnum}</span>
+      ${idx>1?`<button onclick="removeRound(${idx})" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--muted);">✕ 削除</button>`:''}
+    </div>
+    <div style="display:grid;grid-template-columns:${cols};gap:6px;">
+      ${players.map(p=>`<div>
+        <div style="font-size:.72rem;color:var(--muted);margin-bottom:3px;">${p}</div>
+        <input type="number" id="r${idx}-s-${p.replace(/[()]/g,'_')}" placeholder="点数" step="1" style="width:100%;" value="${r.scores[p]!=null?r.scores[p]:''}" oninput="autoRank(${idx})">
+      </div>`).join('')}
+    </div>
+    <div id="r${idx}-rank-preview" style="font-size:.75rem;color:var(--muted);margin-top:5px;"></div>`;
+    list.appendChild(div);
+    autoRank(idx);
+  });
+  // 保存時に元データを上書きするよう編集モードをセット
+  editingUIdx=uIdx;
+  showToast('✏️ 修正モードで読み込みました');
+}
+
+function addRoundToSession(uIdx){
+  editSession(uIdx);
+  // editSession後に半荘を1つ追加
+  setTimeout(()=>{addRound(); showToast('＋ 末尾に半荘を追加しました');},100);
+}
+
+// --- PLAYERS ---
+function initPlayerFilter(){
+  const typeEl=document.getElementById('player-filter-type');
+  const valEl=document.getElementById('player-filter-val');
+  function updateOpts(){
+    const type=typeEl.value;
+    if(type==='season'){
+      valEl.innerHTML='<option value="all">全体</option>'+getSeasons().map(s=>`<option value="${s}">${s}年度</option>`).join('');
+    } else {
+      const venues=getVenues();
+      valEl.innerHTML='<option value="all">全会場</option>'+venues.map(v=>`<option value="${v}">${v}</option>`).join('');
+    }
+    renderPlayers();
+  }
+  typeEl.addEventListener('change', updateOpts);
+  updateOpts();
+}
+function renderPlayers(){
+  const type=document.getElementById('player-filter-type').value;
+  const val=document.getElementById('player-filter-val').value;
+  const sessions=getFiltered(type,val);
+  const stats=calcPlayerStats(sessions);
+  const sorted=Object.entries(stats).sort((a,b)=>b[1].totalScore-a[1].totalScore);
+  document.getElementById('players-tbody').innerHTML=sorted.map(([name,s],i)=>{
+    const r1pct=s.hanso?Math.round(s.wins/s.hanso*100):0;
+    return `<tr><td><strong>${i+1}</strong></td><td><strong>${name}</strong></td><td>${s.games}</td><td>${s.hanso}</td>
+      <td style="color:#b8860b;font-weight:700">${s.ranks[0]}</td><td>${s.ranks[1]}</td><td>${s.ranks[2]}</td>
+      <td style="color:var(--muted)">${s.ranks[3]}</td><td>${r1pct}%</td><td>${s.avgRank.toFixed(2)}</td>
+      <td class="${s.totalScore>=0?'pos':'neg'}">${s.totalScore>=0?'+':''}${s.totalScore.toLocaleString()}</td>
+      <td><span class="chip-badge">${s.totalChip>=0?'+':''}${s.totalChip}</span></td></tr>`;
+  }).join('');
+}
+
+// --- GRAPH ---
+let checkedPlayers=new Set();
+function buildGraphData(season){
+  const sessions=getFiltered('season',season);
+  // Build per-player cumulative score series (half-round by half-round, chronological)
+  const chronoRounds=[];
+  const sortedSess=[...sessions].sort((a,b)=>a.date.localeCompare(b.date));
+  for(const sess of sortedSess){
+    for(const r of sess.rounds){
+      if(r.round==='チップ') continue;
+      chronoRounds.push({date:sess.date, round:r.round, scores:r.scores, venue:normalizeVenue(sess.venue)});
+    }
+  }
+  // Get all players who appear
+  const players=new Set();
+  for(const r of chronoRounds) for(const [p,v] of Object.entries(r.scores)) if(v!==null) players.add(p);
+  // Build series
+  const series={};
+  for(const p of players){
+    let cum=0;
+    const pts=[{x:0,y:0}];
+    for(let i=0;i<chronoRounds.length;i++){
+      const sc=chronoRounds[i].scores[p];
+      if(sc!==null&&sc!==undefined){cum+=sc;}
+      pts.push({x:i+1,y:cum,label:`${chronoRounds[i].date} ${chronoRounds[i].round}`});
+    }
+    series[p]=pts;
+  }
+  return {series, labels:['開始',...chronoRounds.map((r,i)=>`${r.date.slice(5)} ${r.round}`)], players:[...players]};
+}
+
+function initGraphCheckboxes(players){
+  const el=document.getElementById('player-checkboxes');
+  el.innerHTML=players.map((p,i)=>{
+    const color=PLAYER_COLORS[i%PLAYER_COLORS.length];
+    const checked=checkedPlayers.has(p);
+    return `<div class="player-cb ${checked?'checked':''}" id="cb-${p}" style="${checked?`background:${color};`:'color:var(--text)'}" onclick="togglePlayer('${p}','${color}')">${p}</div>`;
+  }).join('');
+}
+
+function togglePlayer(p, color){
+  const el=document.getElementById('cb-'+p);
+  if(checkedPlayers.has(p)){
+    checkedPlayers.delete(p);
+    el.classList.remove('checked');
+    el.style.background='';el.style.color='var(--text)';
+  } else {
+    checkedPlayers.add(p);
+    el.classList.add('checked');
+    el.style.background=color;el.style.color='white';
+  }
+  drawGraph();
+}
+
+function drawGraph(){
+  const season=document.getElementById('graph-season').value;
+  const {series,labels,players}=buildGraphData(season);
+  const datasets=[];
+  players.forEach((p,i)=>{
+    if(!checkedPlayers.has(p)) return;
+    const color=PLAYER_COLORS[i%PLAYER_COLORS.length];
+    datasets.push({
+      label:p, data:series[p].map(pt=>pt.y),
+      borderColor:color, backgroundColor:color+'22',
+      borderWidth:2, pointRadius:2, pointHoverRadius:5, tension:0.1, fill:false
+    });
+  });
+  const ctx=document.getElementById('graph-canvas').getContext('2d');
+  if(graphChart){graphChart.destroy();}
+  graphChart=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:11},boxWidth:14,padding:10}},
+        tooltip:{callbacks:{title:items=>`${items[0].label}（半荘${items[0].dataIndex}）`}}
+      },
+      scales:{
+        x:{ticks:{maxTicksLimit:15,maxRotation:45,font:{size:10}},grid:{color:'rgba(0,0,0,.05)'}},
+        y:{ticks:{font:{size:11}},grid:{color:'rgba(0,0,0,.06)'},
+          title:{display:true,text:'累積ポイント',font:{size:11}}}
+      }
+    }
+  });
+}
+
+function renderGraph(){
+  buildGraphSeasonSelect();
+  const season=document.getElementById('graph-season').value;
+  const {players}=buildGraphData(season);
+  // Preserve checked state, add new players as unchecked
+  initGraphCheckboxes(players);
+  drawGraph();
+}
+
+// --- INPUT (2-step) ---
+let currentPlayers = []; // set in step1
+let currentRoundCount = 0;
+let editingUIdx = -1; // -1=新規, >=0=編集中のuserSessionsインデックス
+
+function initInput(){
+  currentPlayers = [];
+  currentRoundCount = 0;
+  editingUIdx = -1;
+  document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('inp-venue').value = '';
+  const dl = document.getElementById('venue-list');
+  dl.innerHTML = getVenues().map(v=>`<option value="${v}">`).join('');
+  // Show step1, hide step2
+  document.getElementById('step1-card').style.display = '';
+  document.getElementById('step2-card').style.display = 'none';
+  renderPlayerSlots(4);
+}
+
+function renderPlayerSlots(count){
+  const opts = ALL_PLAYERS.map(p=>`<option value="${p}">${p}</option>`).join('');
+  const slots = document.getElementById('player-slots');
+  const existing = [];
+  slots.querySelectorAll('input').forEach(el=>existing.push(el.value.trim()));
+  slots.innerHTML = '';
+  for(let i=0;i<count;i++){
+    const val = existing[i]||'';
+    slots.innerHTML += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+      <span style="width:22px;text-align:right;font-size:.82rem;color:var(--muted);">${i+1}.</span>
+      <input list="ps-${i}" id="ps${i}" placeholder="プレイヤー名" value="${val}" style="flex:1;max-width:220px;">
+      <datalist id="ps-${i}">${opts}</datalist>
+    </div>`;
+  }
+}
+
+function addPlayerSlot(){
+  const count = document.getElementById('player-slots').querySelectorAll('input').length;
+  if(count >= 6){showToast('最大6名まです');return;}
+  renderPlayerSlots(count+1);
+}
+function removePlayerSlot(){
+  const count = document.getElementById('player-slots').querySelectorAll('input').length;
+  if(count <= 4){showToast('最低4名必要です');return;}
+  renderPlayerSlots(count-1);
+}
+
+function goToStep2(){
+  const date = document.getElementById('inp-date').value;
+  if(!date){showToast('対局日を入力してください');return;}
+  const slots = document.getElementById('player-slots').querySelectorAll('input');
+  const players = [];
+  for(let i=0;i<slots.length;i++){
+    const n = slots[i].value.trim();
+    if(!n){showToast(`${i+1}人目の名前を入力してください`);return;}
+    if(players.includes(n)){showToast(`「${n}」が重複しています`);return;}
+    players.push(n);
+  }
+  currentPlayers = players;
+  currentRoundCount = 0;
+  document.getElementById('step1-card').style.display = 'none';
+  document.getElementById('step2-card').style.display = '';
+  const venue = document.getElementById('inp-venue').value.trim();
+  document.getElementById('step2-title').textContent = `🀄 STEP 2 — 半荘結果入力`;
+  document.getElementById('step2-meta').textContent = `${date.replace(/-/g,'/')} ／ ${venue||'場所未設定'} ／ ${players.join('・')}`;
+  document.getElementById('rounds-list').innerHTML = '';
+  // chip inputs
+  const chipEl = document.getElementById('chip-inputs');
+  chipEl.style.gridTemplateColumns = `repeat(auto-fit,minmax(140px,1fr))`;
+  chipEl.innerHTML = players.map(p=>`<div style="display:flex;align-items:center;gap:6px;">
+    <label style="min-width:60px;font-size:.8rem;">${p}</label>
+    <input type="number" id="chip-${p.replace(/[()]/g,'_')}" placeholder="0" step="1" style="width:80px;">
+  </div>`).join('');
+  addRound();
+}
+
+function backToStep1(){
+  document.getElementById('step1-card').style.display = '';
+  document.getElementById('step2-card').style.display = 'none';
+}
+
+const ROUND_NUMS = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫'];
+function addRound(){
+  currentRoundCount++;
+  const idx = currentRoundCount;
+  const rnum = ROUND_NUMS[idx-1]||`(${idx})`;
+  const players = currentPlayers;
+  const cols = `repeat(${players.length},1fr)`;
+  const list = document.getElementById('rounds-list');
+  const div = document.createElement('div');
+  div.id = `round-block-${idx}`;
+  div.style.cssText = 'border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;';
+  div.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+    <span style="font-size:.82rem;font-weight:700;color:var(--muted);">半荘 ${rnum}</span>
+    ${idx>1?`<button onclick="removeRound(${idx})" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--muted);">✕ 削除</button>`:''}
+  </div>
+  <div style="display:grid;grid-template-columns:${cols};gap:6px;">
+    ${players.map(p=>`<div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:3px;">${p}</div>
+      <input type="number" id="r${idx}-s-${p.replace(/[()]/g,'_')}" placeholder="点数" step="1" style="width:100%;" oninput="autoRank(${idx})">
+    </div>`).join('')}
+  </div>
+  <div id="r${idx}-rank-preview" style="font-size:.75rem;color:var(--muted);margin-top:5px;"></div>`;
+  list.appendChild(div);
+}
+
+function removeRound(idx){
+  const el = document.getElementById(`round-block-${idx}`);
+  if(el) el.remove();
+}
+
+function autoRank(idx){
+  const players = currentPlayers;
+  const inputs = players.map(p=>({
+    p,
+    el: document.getElementById(`r${idx}-s-${p.replace(/[()]/g,'_')}`)
+  }));
+  const filled   = inputs.filter(x=>x.el&&x.el.value!=='');
+  const unfilled = inputs.filter(x=>x.el&&x.el.value==='');
+
+  // 残り1人のとき合計0になるよう自動補完
+  if(unfilled.length===1 && filled.length>=2){
+    const sum = filled.reduce((t,x)=>t+parseFloat(x.el.value),0);
+    const auto = -sum;
+    unfilled[0].el.value = auto;
+    unfilled[0].el.style.background='#fff8e1'; // 自動入力を薄黄色で区別
+  } else {
+    // 手動入力欄の背景をリセット
+    inputs.forEach(x=>{if(x.el) x.el.style.background='';});
+  }
+
+  // 順位プレビュー更新
+  const scores = inputs.map(x=>({p:x.p, v:x.el&&x.el.value!==''?parseFloat(x.el.value):null}));
+  const sortedFilled = scores.filter(x=>x.v!==null).sort((a,b)=>b.v-a.v);
+  const preview = sortedFilled.map((x,i)=>`${i+1}位:${x.p}(${x.v>=0?'+':''}${x.v})`).join('　');
+  const previewEl = document.getElementById(`r${idx}-rank-preview`);
+  if(previewEl) previewEl.textContent = preview;
+}
+
+function saveNewGame(){
+  const date = document.getElementById('inp-date').value;
+  const venue = document.getElementById('inp-venue').value.trim();
+  // derive season from year of date
+  const year = date?date.slice(0,4):'2025';
+  // fiscal year: Jan-Mar counts as previous year
+  const month = date?parseInt(date.slice(5,7)):4;
+  const season = month<=3 ? String(parseInt(year)-1) : year;
+
+  const players = currentPlayers;
+  // collect rounds
+  const roundBlocks = document.querySelectorAll('[id^="round-block-"]');
+  if(roundBlocks.length===0){showToast('半荘を1つ以上入力してください');return;}
+  const rounds = [];
+  for(let b=0;b<roundBlocks.length;b++){
+    const idx = roundBlocks[b].id.replace('round-block-','');
+    const rnum = ROUND_NUMS[b]||`(${parseInt(idx)})`;
+    const scores={}, ranks={};
+    const scored = players.map(p=>{
+      const el = document.getElementById(`r${idx}-s-${p.replace(/[()]/g,'_')}`);
+      const v = (el&&el.value!=='')?parseFloat(el.value):null;
+      scores[p]=v;
+      return {p,v};
+    });
+    // compute ranks from scores (nulls last)
+    const filled = scored.filter(x=>x.v!==null).sort((a,b)=>b.v-a.v);
+    filled.forEach((x,i)=>ranks[x.p]=i+1);
+    players.forEach(p=>{if(ranks[p]===undefined)ranks[p]=null;});
+    // require at least 2 players scored
+    if(filled.length<2){showToast(`半荘${rnum}に2人以上の点数を入力してください`);return;}
+    rounds.push({round:rnum,scores,ranks});
+  }
+  // chips
+  const chips={};
+  players.forEach(p=>{
+    const el = document.getElementById(`chip-${p.replace(/[()]/g,'_')}`);
+    chips[p]=el&&el.value!==''?parseFloat(el.value):0;
+  });
+  const sess={date,venue,season,players,rounds,chips};
+  if(editingUIdx>=0){
+    userSessions[editingUIdx]=sess;
+    showToast('✅ 更新しました');
+  } else {
+    userSessions.unshift(sess);
+    showToast('✅ 保存しました');
+  }
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(userSessions));
+  loadData(); initInput();
+}
+
+
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach((b,i)=>{
+    b.classList.toggle('active',['home','history','players','graph','input'][i]===id);
+  });
+  document.getElementById('page-'+id).classList.add('active');
+  if(id==='home') renderHome();
+  if(id==='history') renderHistory();
+  if(id==='players'){initPlayerFilter();renderPlayers();}
+  if(id==='graph') renderGraph();
+  if(id==='input') initInput();
+}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// Init
+loadData();
+renderHome();
+initPlayerFilter();
+</script>
+</body>
+</html>
